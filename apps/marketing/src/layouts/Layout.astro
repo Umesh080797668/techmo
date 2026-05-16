@@ -1,0 +1,228 @@
+---
+import { ViewTransitions } from 'astro:transitions';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonical?: string;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+}
+
+const {
+  title = 'TechMo Electronics',
+  description = 'Premium smartphones, accessories & professional repair services in Sri Lanka.',
+  image = '/og-default.jpg',
+  canonical,
+  type = 'website',
+  noindex = false,
+} = Astro.props;
+
+const siteUrl = import.meta.env.SITE_URL || 'https://techmo.lk';
+const canonicalURL = canonical ? `${siteUrl}${canonical}` : `${siteUrl}${Astro.url.pathname}`;
+const ogImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
+const fullTitle = title === 'TechMo Electronics' ? title : `${title} | TechMo Electronics`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: 'TechMo Electronics',
+  description: 'Premium smartphones, accessories & professional repair services in Sri Lanka.',
+  url: siteUrl,
+  logo: `${siteUrl}/logo.png`,
+  image: `${siteUrl}/og-default.jpg`,
+  telephone: '+94-11-234-5678',
+  email: 'info@techmo.lk',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: '45 Galle Road, Colombo 03',
+    addressLocality: 'Colombo',
+    addressRegion: 'Western Province',
+    postalCode: '00300',
+    addressCountry: 'LK',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: 6.9102,
+    longitude: 79.8481,
+  },
+  openingHoursSpecification: [
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday'], opens: '09:00', closes: '18:30' },
+    { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday'], opens: '09:00', closes: '17:00' },
+  ],
+  priceRange: '$$',
+  currenciesAccepted: 'LKR',
+  paymentAccepted: 'Cash, Credit Card, Bank Transfer',
+  sameAs: [
+    'https://www.facebook.com/techmoelectronics',
+    'https://www.instagram.com/techmo.lk',
+    'https://twitter.com/techmo_lk',
+  ],
+};
+---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
+
+    <!-- Canonical -->
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={fullTitle} />
+    <meta property="og:site_name" content="TechMo Electronics" />
+    <meta property="og:locale" content="en_LK" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@techmo_lk" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={fullTitle} />
+
+    <!-- Extra SEO -->
+    <meta name="theme-color" content="#1e40af" />
+    <meta name="author" content="TechMo Electronics" />
+    <meta name="geo.region" content="LK-1" />
+    <meta name="geo.placename" content="Colombo, Sri Lanka" />
+
+    <!-- JSON-LD structured data -->
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <title>{fullTitle}</title>
+
+    <!-- View Transitions (page-to-page animations) -->
+    <ViewTransitions />
+
+    <!-- Cloudflare Web Analytics -->
+    {import.meta.env.CF_ANALYTICS_TOKEN && (
+      <script
+        is:inline
+        defer
+        src="https://static.cloudflareinsights.com/beacon.min.js"
+        data-cf-beacon={`{"token": "${import.meta.env.CF_ANALYTICS_TOKEN}"}`}
+      ></script>
+    )}
+    <style is:global>
+      :root {
+        --color-primary: #1e40af;
+        --color-primary-dark: #1e3a8a;
+        --color-secondary: #0f172a;
+        --color-accent: #f59e0b;
+        --color-accent-dark: #d97706;
+        --color-background: #f8fafc;
+        --color-surface: #ffffff;
+        --color-success: #16a34a;
+        --color-warning: #d97706;
+        --color-danger: #dc2626;
+        --color-text-muted: #64748b;
+        --transition-fast: 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        --transition-normal: 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        --transition-slow: 350ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        --ease-smooth: cubic-bezier(0.2, 0.8, 0.2, 1);
+        --radius-sm: 0.5rem;
+        --radius-md: 0.75rem;
+        --radius-lg: 1rem;
+        --radius-xl: 1.5rem;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+      *, *::before, *::after { box-sizing: border-box; }
+      html { scroll-behavior: smooth; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+      body {
+        margin: 0;
+        background: var(--color-background);
+        color: var(--color-secondary);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      img { max-width: 100%; height: auto; }
+      a { color: inherit; text-decoration: none; }
+
+      /* ── Page transition progress bar ─────────────────────── */
+      #page-progress {
+        position: fixed; top: 0; left: 0; z-index: 9999;
+        height: 3px; width: 0%;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+        transition: width 300ms ease, opacity 200ms ease;
+        opacity: 0;
+        pointer-events: none;
+        box-shadow: 0 0 8px rgba(30, 64, 175, 0.6);
+      }
+      #page-progress.loading { opacity: 1; animation: progress-pulse 1s ease infinite; }
+      #page-progress.done { width: 100% !important; opacity: 0; transition: width 200ms, opacity 400ms 150ms; }
+      @keyframes progress-pulse {
+        0%, 100% { box-shadow: 0 0 8px rgba(30, 64, 175, 0.6); }
+        50% { box-shadow: 0 0 16px rgba(245, 158, 11, 0.7); }
+      }
+
+      /* ── View transition fade ─────────────────────────────── */
+      ::view-transition-old(root) { animation: fade-out 200ms ease forwards; }
+      ::view-transition-new(root) { animation: fade-in 250ms ease forwards; }
+      @keyframes fade-out { to { opacity: 0; transform: translateY(-4px); } }
+      @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } }
+    </style>
+  </head>
+  <body>
+    <!-- Page transition progress bar -->
+    <div id="page-progress" role="progressbar" aria-hidden="true"></div>
+    <slot />
+
+    <script>
+      // NProgress-style bar driven by Astro's view transition events
+      const bar = document.getElementById('page-progress') as HTMLDivElement;
+      let width = 0;
+      let raf: number;
+
+      function grow() {
+        if (width < 85) {
+          width += (85 - width) * 0.08 + 0.5;
+          bar.style.width = width + '%';
+          raf = requestAnimationFrame(grow);
+        }
+      }
+
+      document.addEventListener('astro:before-preparation', () => {
+        cancelAnimationFrame(raf);
+        width = 0;
+        bar.style.width = '0%';
+        bar.classList.add('loading');
+        bar.classList.remove('done');
+        raf = requestAnimationFrame(grow);
+      });
+
+      document.addEventListener('astro:page-load', () => {
+        cancelAnimationFrame(raf);
+        width = 100;
+        bar.style.width = '100%';
+        bar.classList.remove('loading');
+        bar.classList.add('done');
+        setTimeout(() => {
+          bar.classList.remove('done');
+          bar.style.width = '0%';
+          width = 0;
+        }, 600);
+      });
+    </script>
+  </body>
+</html>

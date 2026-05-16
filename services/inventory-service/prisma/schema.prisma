@@ -1,0 +1,171 @@
+// TechMo Inventory Service – Prisma Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Inventory {
+  id          String   @id @default(uuid())
+  productId   String
+  variantId   String?
+  sku         String   @unique
+  branchId    String?
+  quantity    Int      @default(0)
+  reserved    Int      @default(0)  // reserved but not yet deducted
+  lowStockQty Int      @default(5)
+  location    String?  // shelf / bin location
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  movements      StockMovement[]
+  batteryEntries BatteryStockEntry[]
+
+  @@map("inventory")
+}
+
+model StockMovement {
+  id           String        @id @default(uuid())
+  inventoryId  String
+  inventory    Inventory     @relation(fields: [inventoryId], references: [id])
+  movementType MovementType
+  quantity     Int           // positive = in, negative = out
+  reason       String
+  reference    String?       // orderId / repairId / adjustmentId
+  performedBy  String        // userId
+  notes        String?
+  createdAt    DateTime      @default(now())  // immutable
+
+  @@map("stock_movements")
+}
+
+enum MovementType {
+  PURCHASE_IN
+  SALE_OUT
+  REPAIR_USED
+  RETURN_IN
+  ADJUSTMENT
+  TRANSFER
+  DAMAGE_LOSS
+  INITIAL_STOCK
+}
+
+// ---------------------------------------------------------------------------
+// Offline-First Stocktake (Phase 3)
+// Matches the Dexie.js IndexedDB schema in apps/admin/src/lib/stocktake-db.ts
+// ---------------------------------------------------------------------------
+
+/// Server-side record of a stocktake audit session (mirrors IndexedDB sessions table)
+model StocktakeSession {
+  id        String              @id @default(uuid())
+  branchId  String
+  staffId   String
+  status    StocktakeStatus     @default(IN_PROGRESS)
+  startedAt DateTime            @default(now())
+  syncedAt  DateTime?
+  scans     StocktakeScan[]
+
+  @@map("stocktake_sessions")
+}
+
+/// Each individual SKU scan within a stocktake session
+model StocktakeScan {
+  id          String           @id @default(uuid())
+  sessionId   String
+  session     StocktakeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sku         String
+  scannedQty  Int              @default(1)
+  systemQty   Int?             // populated during reconciliation
+  status      ScanStatus       @default(PENDING)
+  scannedAt   DateTime
+
+  @@map("stocktake_scans")
+}
+
+enum StocktakeStatus {
+  IN_PROGRESS
+  SYNCED
+  RECONCILED
+}
+
+enum ScanStatus {
+  PENDING
+  MATCHED
+  DISCREPANCY
+}
+
+// ---------------------------------------------------------------------------
+// Battery Stock Tracking (Phase 4)
+// ---------------------------------------------------------------------------
+
+model BatteryStockEntry {
+  id               String    @id @default(uuid())
+  inventoryId      String
+  inventory        Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  receivedAt       DateTime
+  manufacturedAt   DateTime?
+  shelfLifeDays    Int
+  alertFractionPct Float     @default(0.8)  // alert at 80% of shelf life by default
+  batchNumber      String?
+  ratedCapacityMah Int?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  alerts BatteryAlert[]
+
+  @@map("battery_stock_entries")
+}
+
+model BatteryAlert {
+  id              String           @id @default(uuid())
+  entryId         String
+  entry           BatteryStockEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  alertType       BatteryAlertType
+  message         String
+  daysOnShelf     Int
+  acknowledgedAt  DateTime?
+  acknowledgedBy  String?
+  createdAt       DateTime         @default(now())
+
+  @@map("battery_alerts")
+}
+
+enum BatteryAlertType {
+  APPROACHING_SHELF_LIMIT
+  SHELF_LIMIT_EXCEEDED
+  CRITICAL_AGE
+}
+
+// ---------------------------------------------------------------------------
+// Branch-to-Branch Inventory Transfers (Phase 4)
+// ---------------------------------------------------------------------------
+
+model InventoryTransfer {
+  id           String         @id @default(cuid())
+  fromBranchId String
+  toBranchId   String
+  productId    String
+  productName  String
+  qty          Int
+  status       TransferStatus @default(REQUESTED)
+  requestedBy  String
+  approvedBy   String?
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  completedAt  DateTime?
+
+  @@map("inventory_transfers")
+}
+
+enum TransferStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}

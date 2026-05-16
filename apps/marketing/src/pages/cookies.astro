@@ -1,0 +1,152 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+
+const lastUpdated = 'February 25, 2026';
+---
+<Layout
+  title="Cookie Policy — TechMo Electronics"
+  description="Learn how TechMo uses cookies and tracking technologies on its website."
+  canonical="/cookies"
+>
+  <Navbar />
+
+  <section class="bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] text-white py-14 px-4">
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="text-5xl mb-3" aria-hidden="true">🍪</div>
+      <h1 class="text-4xl font-bold mb-2">Cookie Policy</h1>
+      <p class="text-blue-200">Last updated: {lastUpdated}</p>
+    </div>
+  </section>
+
+  <section class="py-14 px-4 bg-white">
+    <div class="max-w-3xl mx-auto prose-custom">
+      <div class="notice-box">
+        <strong>Short version:</strong> TechMo's website uses minimal cookies. Our analytics tool
+        (Cloudflare Web Analytics) is cookie-free and GDPR-compliant. We do not track you across
+        other websites.
+      </div>
+
+      <section aria-labelledby="c1">
+        <h2 id="c1">1. What Are Cookies?</h2>
+        <p>Cookies are small text files stored on your device when you visit a website. They help
+        websites remember your preferences, keep you logged in, and understand how you use the site.</p>
+      </section>
+
+      <section aria-labelledby="c2">
+        <h2 id="c2">2. What Cookies Does TechMo Use?</h2>
+
+        <div class="cookie-table-wrap">
+          <table class="cookie-table">
+            <thead>
+              <tr>
+                <th>Cookie / Technology</th>
+                <th>Type</th>
+                <th>Purpose</th>
+                <th>Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>cf_clearance</code></td>
+                <td>Security</td>
+                <td>Cloudflare bot/DDoS challenge verification</td>
+                <td>Session / 30 days</td>
+              </tr>
+              <tr>
+                <td>Cloudflare Turnstile</td>
+                <td>Security</td>
+                <td>CAPTCHA-free bot protection on forms</td>
+                <td>Session</td>
+              </tr>
+              <tr>
+                <td>Cloudflare Web Analytics</td>
+                <td>Analytics</td>
+                <td>Cookie-free, privacy-first site analytics (no personal data)</td>
+                <td>No cookie stored</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="mt-4">We do <strong>not</strong> use:</p>
+        <ul>
+          <li>Google Analytics or any Google tracking</li>
+          <li>Facebook Pixel or social media tracking</li>
+          <li>Advertising cookies or cross-site trackers</li>
+          <li>Third-party retargeting cookies</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="c3">
+        <h2 id="c3">3. Essential Cookies</h2>
+        <p>Some cookies are strictly necessary for our website and services to function correctly.
+        These cannot be disabled without affecting core functionality. They include security tokens
+        set by Cloudflare to protect our infrastructure from bots and attacks.</p>
+      </section>
+
+      <section aria-labelledby="c4">
+        <h2 id="c4">4. Analytics</h2>
+        <p>We use <strong>Cloudflare Web Analytics</strong> to understand how visitors use our site.
+        This tool is:</p>
+        <ul>
+          <li><strong>Cookie-free</strong> — no cookie is placed on your device</li>
+          <li><strong>Privacy-first</strong> — no personal data is collected or stored</li>
+          <li><strong>GDPR-compliant</strong> — no consent required under EU law</li>
+          <li>Data is aggregated and anonymised; individual visitors are never identified</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="c5">
+        <h2 id="c5">5. Your Choices</h2>
+        <p>Because we use very few cookies — and none for advertising — there is little to configure.
+        However, you can:</p>
+        <ul>
+          <li>Use your <strong>browser settings</strong> to block or delete cookies</li>
+          <li>Use a <strong>browser extension</strong> such as uBlock Origin to block tracking scripts</li>
+          <li>Enable <strong>Do Not Track</strong> in your browser — we honour this signal</li>
+        </ul>
+        <p>Blocking security cookies (cf_clearance) may prevent you from accessing our website
+        if Cloudflare detects unusual traffic from your network.</p>
+      </section>
+
+      <section aria-labelledby="c6">
+        <h2 id="c6">6. Changes to This Policy</h2>
+        <p>We may update this Cookie Policy if we add new technologies to our site. The "last updated"
+        date at the top of this page will reflect any changes.</p>
+      </section>
+
+      <section aria-labelledby="c7">
+        <h2 id="c7">7. Contact</h2>
+        <p>Questions about our use of cookies? Contact us at
+        <a href="mailto:privacy@techmo.lk">privacy@techmo.lk</a> or visit our
+        <a href="/contact">Contact page</a>.</p>
+      </section>
+
+      <div class="flex flex-wrap gap-4 mt-10 pt-6 border-t border-gray-100">
+        <a href="/privacy-policy" class="policy-link">Privacy Policy →</a>
+        <a href="/terms" class="policy-link">Terms of Service →</a>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+</Layout>
+
+<style>
+  .prose-custom { @apply text-[#334155] leading-relaxed; }
+  .prose-custom h2 { @apply text-xl font-bold text-[#0f172a] mt-10 mb-4 pb-2 border-b border-gray-100; }
+  .prose-custom p { @apply mb-4 text-[15px]; }
+  .prose-custom ul { @apply list-disc pl-5 space-y-1.5 mb-4 text-[15px]; }
+  .prose-custom a { @apply text-[#1e40af] hover:underline font-medium; }
+  .prose-custom strong { @apply text-[#0f172a]; }
+  .notice-box { @apply bg-green-50 border border-green-100 rounded-xl p-5 mb-8 text-sm text-[#334155]; }
+  .policy-link { @apply inline-flex items-center gap-1 text-sm font-medium text-[#1e40af] hover:text-[#1e3a8a] transition-colors; }
+  .cookie-table-wrap { @apply overflow-x-auto rounded-xl border border-gray-100 mt-4; }
+  .cookie-table { @apply w-full text-sm; }
+  .cookie-table th { @apply bg-[#f8fafc] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide; }
+  .cookie-table td { @apply px-4 py-3 border-t border-gray-50 text-[#334155]; }
+  .cookie-table tr:hover td { @apply bg-[#f8fafc]; }
+  .cookie-table code { @apply bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-slate-700; }
+</style>

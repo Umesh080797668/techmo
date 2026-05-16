@@ -1,0 +1,94 @@
+---
+const CUSTOMER_PORTAL_URL = import.meta.env.PUBLIC_CUSTOMER_PORTAL_URL ?? 'http://localhost:4002';
+---
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="/" class="brand">⚡ TechMo</a>
+      <p>Sri Lanka's premier mobile repair and technology retail store. Quality parts, expert technicians, guaranteed service.</p>
+      <div class="socials">
+        <a href="#" aria-label="Facebook">FB</a>
+        <a href="#" aria-label="Instagram">IG</a>
+        <a href="#" aria-label="WhatsApp">WA</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4>Services</h4>
+      <ul>
+        <li><a href="/products">Mobile Accessories</a></li>
+        <li><a href="/repairs">Repair Services</a></li>
+        <li><a href="/repair-status">Track Repair</a></li>
+        <li><a href="/warranty">Warranty</a></li>
+        <li><a href="/loyalty">Loyalty Programme</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="/about">About Us</a></li>
+        <li><a href="/contact">Contact</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/privacy-policy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms of Service</a></li>
+        <li><a href="/cookies">Cookie Policy</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <ul>
+        <li><a href={CUSTOMER_PORTAL_URL} target="_blank" rel="noopener">My Account</a></li>
+        <li><a href={`${CUSTOMER_PORTAL_URL}/dashboard/repairs`} target="_blank" rel="noopener">My Repairs</a></li>
+        <li><a href={`${CUSTOMER_PORTAL_URL}/dashboard/points`} target="_blank" rel="noopener">My Points</a></li>
+        <li><a href={`${CUSTOMER_PORTAL_URL}/dashboard/warranty`} target="_blank" rel="noopener">My Warranty</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <ul>
+        <li>📍 Colombo, Sri Lanka</li>
+        <li>📞 +94 11 234 5678</li>
+        <li>✉️ info@techmo.lk</li>
+        <li>🕒 Mon–Sat: 9am – 7pm</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© {new Date().getFullYear()} TechMo Enterprise. All rights reserved.</p>
+  </div>
+</footer>
+
+<style>
+  .footer { background: var(--color-secondary); color: #94a3b8; margin-top: 5rem; }
+  .footer-inner {
+    max-width: 1200px; margin: 0 auto;
+    padding: 3rem 1.5rem;
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 2.5rem;
+  }
+  .brand { color: white; font-weight: 800; font-size: 1.25rem; display: block; margin-bottom: 0.75rem; }
+  .footer-brand p { font-size: 0.875rem; line-height: 1.6; }
+  .socials { display: flex; gap: 0.75rem; margin-top: 1rem; }
+  .socials a {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #1e293b; color: #94a3b8; font-size: 0.75rem; font-weight: 700;
+    transition: all 150ms;
+  }
+  .socials a:hover { background: var(--color-primary); color: white; }
+  .footer-col h4 { color: white; font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; }
+  .footer-col ul { list-style: none; }
+  .footer-col li { font-size: 0.875rem; margin-bottom: 0.5rem; }
+  .footer-col a { color: #94a3b8; transition: color 150ms; }
+  .footer-col a:hover { color: white; }
+  .footer-bottom {
+    border-top: 1px solid #1e293b;
+    text-align: center; padding: 1.25rem;
+    font-size: 0.8rem;
+  }
+  @media (max-width: 900px) {
+    .footer-inner { grid-template-columns: 1fr 1fr; }
+    .footer-brand { grid-column: 1 / -1; }
+  }
+  @media (max-width: 480px) {
+    .footer-inner { grid-template-columns: 1fr; }
+  }
+</style>

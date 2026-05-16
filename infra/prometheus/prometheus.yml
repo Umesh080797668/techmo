@@ -1,0 +1,159 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# TechMo – Prometheus Configuration
+# Scrapes metrics from all NestJS/Spring Boot services + Redis + system.
+# ─────────────────────────────────────────────────────────────────────────────
+
+global:
+  scrape_interval:     15s   # Pull metrics every 15 seconds
+  evaluation_interval: 15s   # Evaluate alerting rules every 15 seconds
+  scrape_timeout:      10s
+
+# ─── Alertmanager integration ─────────────────────────────────────────────────
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+# ─── Alert rule files ─────────────────────────────────────────────────────────
+rule_files:
+  - "/etc/prometheus/rules/*.yml"
+
+# ─── Scrape jobs ──────────────────────────────────────────────────────────────
+scrape_configs:
+
+  # Prometheus self-monitoring
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # ── API Gateway (NestJS + @nestjs/terminus health + prom-client) ──────────
+  - job_name: gateway
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['gateway:3000']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'gateway'
+
+  # ── Auth Service (Spring Boot Actuator /actuator/prometheus) ─────────────
+  - job_name: auth-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['auth-service:8081']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'auth-service'
+
+  # ── Product Service ───────────────────────────────────────────────────────
+  - job_name: product-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['product-service:3001']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'product-service'
+
+  # ── Inventory Service ─────────────────────────────────────────────────────
+  - job_name: inventory-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['inventory-service:3002']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'inventory-service'
+
+  # ── Order / POS Service ───────────────────────────────────────────────────
+  - job_name: order-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['order-service:3003']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'order-service'
+
+  # ── Repair Service ────────────────────────────────────────────────────────
+  - job_name: repair-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['repair-service:3004']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'repair-service'
+
+  # ── Loyalty / CRM Service ─────────────────────────────────────────────────
+  - job_name: loyalty-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['loyalty-service:3005']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'loyalty-service'
+
+  # ── HR Service ────────────────────────────────────────────────────────────
+  - job_name: hr-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['hr-service:3006']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'hr-service'
+
+  # ── Worker Service (FastAPI + prometheus-fastapi-instrumentator) ──────────
+  - job_name: worker-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['worker-service:8000']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'worker-service'
+
+  # ── Redis (redis_exporter sidecar) ────────────────────────────────────────
+  - job_name: redis
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'redis'
+
+  # ── PostgreSQL instances (postgres_exporter sidecars) ─────────────────────
+  - job_name: postgres-auth
+    static_configs:
+      - targets: ['postgres-exporter-auth:9187']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'postgres-auth'
+
+  - job_name: postgres-product
+    static_configs:
+      - targets: ['postgres-exporter-product:9188']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'postgres-product'
+
+  - job_name: postgres-order
+    static_configs:
+      - targets: ['postgres-exporter-order:9189']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'postgres-order'
+
+  - job_name: postgres-repair
+    static_configs:
+      - targets: ['postgres-exporter-repair:9190']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'postgres-repair'

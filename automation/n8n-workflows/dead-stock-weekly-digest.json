@@ -1,0 +1,46 @@
+{
+  "name": "Dead Stock Weekly Digest (Monday 09:00)",
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 9 * * 1" }] }
+      }
+    },
+    {
+      "id": "fetch_dead_stock",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/inventory/dead-stock?noMovementDays=90",
+        "headerParameters": {
+          "parameters": [{ "name": "x-n8n-secret", "value": "={{ $env.N8N_SECRET }}" }]
+        }
+      }
+    },
+    {
+      "id": "has_items",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "number": [{ "value1": "={{ $json.length }}", "operation": "larger", "value2": 0 }]
+        }
+      }
+    },
+    {
+      "id": "telegram_digest",
+      "type": "n8n-nodes-base.telegram",
+      "parameters": {
+        "chatId":     "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text":       "🏚️ *Dead Stock Weekly Digest*\n\n{{ $json.slice(0,15).map(i => `• ${i.name} — Qty: ${i.stockQty}, Last sold: ${i.lastSoldDate ?? 'Never'}`).join('\\n') }}{{ $json.length > 15 ? '\\n…and ' + ($json.length - 15) + ' more' : '' }}\n\nConsider promotions or markdown pricing.",
+        "parse_mode": "Markdown"
+      }
+    }
+  ],
+  "connections": {
+    "trigger":         { "main": [["fetch_dead_stock"]] },
+    "fetch_dead_stock":{ "main": [["has_items"]] },
+    "has_items":       { "main": [["telegram_digest"], []] }
+  }
+}

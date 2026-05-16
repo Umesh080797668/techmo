@@ -1,0 +1,352 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+
+const features = [
+  { icon: '🔧', title: 'Expert Repairs', desc: 'Screen, battery, charging port, and more — certified technicians using genuine parts.' },
+  { icon: '📱', title: 'Premium Devices', desc: 'Curated selection of smartphones, tablets, and wearables at competitive prices.' },
+  { icon: '🛡️', title: 'Warranty Covered', desc: 'Every product and repair backed by our quality guarantee.' },
+  { icon: '⭐', title: 'Loyalty Rewards', desc: 'Earn points with every purchase and redeem for discounts.' },
+  { icon: '⚡', title: 'Fast Turnaround', desc: 'Most repairs completed same-day. Track your device in real time.' },
+  { icon: '🔍', title: 'Compatibility Checks', desc: 'Find the right accessory for your exact device model every time.' },
+];
+
+const categories = [
+  { emoji: '📱', name: 'Smartphones', href: '/products?category=smartphone', color: 'bg-blue-50 hover:bg-blue-100' },
+  { emoji: '🎧', name: 'Audio', href: '/products?category=audio', color: 'bg-purple-50 hover:bg-purple-100' },
+  { emoji: '🔋', name: 'Batteries', href: '/products?category=battery', color: 'bg-green-50 hover:bg-green-100' },
+  { emoji: '🖥️', name: 'Tablets', href: '/products?category=tablet', color: 'bg-orange-50 hover:bg-orange-100' },
+  { emoji: '🛡️', name: 'Cases', href: '/products?category=case', color: 'bg-pink-50 hover:bg-pink-100' },
+  { emoji: '🔌', name: 'Chargers', href: '/products?category=charger', color: 'bg-yellow-50 hover:bg-yellow-100' },
+];
+
+// ─── Live reviews from API (SSR — fetched at request time) ───────────────────
+const GATEWAY = import.meta.env.GATEWAY_INTERNAL_URL ?? import.meta.env.PUBLIC_GATEWAY_URL ?? 'http://gateway:3000';
+
+type Review = {
+  id: string; name: string; rating: number;
+  title?: string; body: string; photoUrl?: string; createdAt: string;
+};
+
+async function safeFetch<T>(url: string, fallback: T): Promise<T> {
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) return fallback;
+    return (await r.json()) as T;
+  } catch { return fallback; }
+}
+
+const testimonialsData = await safeFetch<{ reviews: Review[] }>(
+  `${GATEWAY}/api/v1/reviews?limit=6`,
+  { reviews: [] },
+);
+const galleryData = await safeFetch<{ reviews: Review[] }>(
+  `${GATEWAY}/api/v1/reviews/gallery`,
+  { reviews: [] },
+);
+
+const testimonials: Review[] = testimonialsData.reviews ?? [];
+const galleryReviews: Review[] = galleryData.reviews ?? [];
+
+// Fallback static testimonials if API returns nothing
+const fallbackTestimonials: Review[] = [
+  { id: 'f1', name: 'Kasun Perera',   rating: 5, body: 'Got my screen replaced in under 2 hours. Excellent quality and staff were very professional.',             createdAt: '' },
+  { id: 'f2', name: 'Nimesha Silva',  rating: 5, body: "The points system is great — I've saved thousands on accessories. Best phone shop in town!",              createdAt: '' },
+  { id: 'f3', name: 'Roshan Fernando',rating: 5, body: 'We manage our whole office fleet through TechMo. The warranty support is outstanding.',                    createdAt: '' },
+];
+const displayTestimonials = testimonials.length > 0 ? testimonials : fallbackTestimonials;
+---
+<Layout title="TechMo Electronics — Smartphones & Repairs">
+  <Navbar />
+
+  <!-- Hero -->
+  <section class="hero-section text-white py-28 px-4 relative overflow-hidden">
+    <div class="hero-bg-shapes" aria-hidden="true">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+    </div>
+    <div class="max-w-5xl mx-auto text-center relative z-10">
+      <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20
+                  rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+        <span class="w-2 h-2 bg-[#f59e0b] rounded-full animate-pulse"></span>
+        Sri Lanka's #1 Electronics Specialists
+      </div>
+      <h1 class="text-5xl md:text-6xl font-extrabold leading-tight mb-6 tracking-tight">
+        Smartphones &amp; Accessories<br />
+        <span class="text-[#f59e0b]">Repaired &amp; Sold with Trust</span>
+      </h1>
+      <p class="text-lg md:text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+        TechMo is your one-stop destination for premium phones, accessories,
+        and professional repair services — backed by warranty and expert technicians.
+      </p>
+      <div class="flex flex-wrap gap-4 justify-center">
+        <a href="/products"
+           class="bg-[#f59e0b] text-[#0f172a] px-8 py-3.5 rounded-xl font-semibold
+                  hover:bg-[#d97706] transition-all duration-[250ms]
+                  hover:scale-105 transform shadow-lg shadow-amber-500/30">
+          Browse Products →
+        </a>
+        <a href="/repair-status"
+           class="border-2 border-white/70 text-white px-8 py-3.5 rounded-xl font-semibold
+                  hover:bg-white hover:text-[#1e40af] transition-all duration-[250ms]">
+          Track My Repair
+        </a>
+      </div>
+      <!-- Hero Stats -->
+      <div class="flex flex-wrap justify-center gap-8 mt-16 pt-8 border-t border-white/20">
+        {[
+          { value: '10,000+', label: 'Devices Repaired' },
+          { value: '500+', label: 'Products In Stock' },
+          { value: '98%', label: 'Customer Satisfaction' },
+          { value: '5yr', label: 'In Business' },
+        ].map(s => (
+          <div class="text-center">
+            <div class="text-2xl font-bold text-[#f59e0b]">{s.value}</div>
+            <div class="text-sm text-blue-200 mt-0.5">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section class="py-20 px-4 bg-white" id="about">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-[#0f172a] mb-3">Why Choose TechMo?</h2>
+        <p class="text-[#64748b] max-w-xl mx-auto">
+          From expert repairs to curated products, we've built our reputation on quality and trust.
+        </p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {features.map(f => (
+          <div class="group bg-[#f8fafc] rounded-2xl p-7 border border-gray-100
+                      hover:shadow-lg hover:border-[#1e40af]/20 hover:-translate-y-1
+                      transition-all duration-[300ms]">
+            <div class="text-4xl mb-4">{f.icon}</div>
+            <h3 class="font-semibold text-[#0f172a] text-lg mb-2">{f.title}</h3>
+            <p class="text-[#64748b] text-sm leading-relaxed">{f.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Categories -->
+  <section class="py-20 px-4 bg-[#f8fafc]" id="products">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex items-end justify-between mb-12">
+        <div>
+          <h2 class="text-3xl font-bold text-[#0f172a] mb-2">Shop by Category</h2>
+          <p class="text-[#64748b]">Find exactly what you need.</p>
+        </div>
+        <a href="/products" class="text-sm font-semibold text-[#1e40af] hover:underline hidden sm:block">
+          View All Products →
+        </a>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        {categories.map(c => (
+          <a href={c.href}
+             class={`${c.color} rounded-2xl p-5 text-center transition-all duration-[250ms]
+                     hover:scale-105 hover:shadow-md group`}>
+            <div class="text-4xl mb-2">{c.emoji}</div>
+            <div class="text-sm font-semibold text-[#0f172a]">{c.name}</div>
+          </a>
+        ))}
+      </div>
+      <div class="text-center mt-6 sm:hidden">
+        <a href="/products" class="text-sm font-semibold text-[#1e40af] hover:underline">View All Products →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Repair Tracker CTA -->
+  <section class="py-20 px-4 bg-[#0f172a] text-white" id="repair">
+    <div class="max-w-5xl mx-auto">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <!-- Left: Services List -->
+        <div>
+          <h2 class="text-3xl font-bold mb-3">Professional Repair Services</h2>
+          <p class="text-gray-400 mb-8">Drop your device at any TechMo branch. Our certified technicians will diagnose and fix it fast.</p>
+          <ul class="space-y-3">
+            {['Screen &amp; Display Replacement', 'Battery Replacement', 'Charging Port Repair',
+              'Software &amp; OS Issues', 'Water Damage Recovery', 'Camera Module Repair',
+              'Speaker &amp; Microphone Fix', 'Motherboard Repair'].map(s => (
+              <li class="flex items-center gap-3 text-sm text-gray-300">
+                <span class="w-5 h-5 bg-[#16a34a] rounded-full flex items-center justify-center text-white text-xs flex-shrink-0">✓</span>
+                <span set:html={s} />
+              </li>
+            ))}
+          </ul>
+        </div>
+        <!-- Right: Tracker Widget -->
+        <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
+          <div class="text-center mb-6">
+            <div class="text-5xl mb-3">📲</div>
+            <h3 class="text-xl font-bold">Track Your Repair</h3>
+            <p class="text-gray-400 text-sm mt-1">Enter your QR token or ticket number below</p>
+          </div>
+          <input
+            type="text"
+            placeholder="e.g. RPR-2024-00123 or qr token"
+            class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-sm text-white
+                   placeholder-gray-500 mb-3 focus:outline-none focus:ring-2 focus:ring-[#f59e0b]
+                   transition duration-150"
+            id="ticket-input"
+          />
+          <button
+            onclick="checkStatus()"
+            class="w-full bg-[#f59e0b] text-[#0f172a] py-3 rounded-xl text-sm font-bold
+                   hover:bg-[#d97706] transition-colors duration-[250ms]">
+            Check Status
+          </button>
+          <div id="ticket-result" class="mt-4 text-sm text-center min-h-[24px]"></div>
+          <div class="mt-6 pt-6 border-t border-white/10 text-center">
+            <a href="/repair-status" class="text-sm text-[#f59e0b] hover:underline">
+              Open full tracking page →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials (live from API with static fallback) -->
+  <section class="py-20 px-4 bg-white">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-[#0f172a] mb-3">What Our Customers Say</h2>
+        <p class="text-[#64748b]">Thousands of satisfied customers across Sri Lanka.</p>
+      </div>
+      <div class="grid md:grid-cols-3 gap-6">
+        {displayTestimonials.map(t => (
+          <div class="bg-[#f8fafc] rounded-2xl p-7 border border-gray-100 hover:shadow-md transition-shadow duration-[250ms]">
+            <div class="text-[#f59e0b] text-lg mb-3">{'★'.repeat(t.rating)}</div>
+            {t.title && <h3 class="font-semibold text-[#0f172a] text-sm mb-1">{t.title}</h3>}
+            <p class="text-[#0f172a] text-sm leading-relaxed mb-4">"{t.body}"</p>
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 bg-gradient-to-br from-[#1e40af] to-[#1e3a8a] rounded-full
+                          flex items-center justify-center text-white font-bold text-sm">
+                {t.name.charAt(0)}
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-[#0f172a]">{t.name}</div>
+                <div class="text-xs text-[#64748b]">Verified Customer</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Happy Customers Gallery (featured reviews with photos) -->
+  {galleryReviews.length > 0 && (
+    <section class="py-20 px-4 bg-[#f8fafc]" id="gallery">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold text-[#0f172a] mb-3">Happy Customers</h2>
+          <p class="text-[#64748b]">Real moments shared by our valued customers.</p>
+        </div>
+        <div class="columns-2 sm:columns-3 lg:columns-4 gap-4 space-y-4">
+          {galleryReviews.map(r => (
+            <div class="break-inside-avoid bg-white rounded-2xl overflow-hidden border border-gray-100
+                        shadow-sm hover:shadow-lg transition-shadow duration-[300ms] group">
+              {r.photoUrl && (
+                <div class="overflow-hidden">
+                  <img
+                    src={r.photoUrl}
+                    alt={`Customer photo by ${r.name}`}
+                    class="w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                </div>
+              )}
+              <div class="p-4">
+                <div class="text-[#f59e0b] text-sm mb-1">{'★'.repeat(r.rating)}</div>
+                {r.title && <p class="font-semibold text-[#0f172a] text-sm mb-1">{r.title}</p>}
+                <p class="text-[#64748b] text-xs leading-relaxed line-clamp-3">"{r.body}"</p>
+                <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                  <div class="w-7 h-7 bg-gradient-to-br from-[#1e40af] to-[#7c3aed] rounded-full
+                              flex items-center justify-center text-white font-bold text-xs shrink-0">
+                    {r.name.charAt(0)}
+                  </div>
+                  <span class="text-xs font-medium text-[#0f172a] truncate">{r.name}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Loyalty Program CTA -->
+  <section class="py-20 px-4 bg-gradient-to-r from-[#1e40af] to-[#7c3aed] text-white">
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="text-5xl mb-4">⭐</div>
+      <h2 class="text-3xl font-bold mb-3">Join TechMo Loyalty</h2>
+      <p class="text-blue-100 mb-8 leading-relaxed">
+        Earn 1 point for every 100 LKR spent. Reach 5,000 points to unlock
+        <strong class="text-white">PREMIUM</strong> status — exclusive discounts and priority service.
+      </p>
+      <a href="/contact"
+         class="inline-block bg-white text-[#1e40af] px-8 py-3.5 rounded-xl font-bold
+                hover:bg-blue-50 transition-colors duration-[250ms] hover:scale-105 transform">
+        Sign Up In-Store Today
+      </a>
+    </div>
+  </section>
+
+  <Footer />
+
+  <style>
+    .hero-section {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%);
+      position: relative;
+    }
+    .hero-bg-shapes { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.08;
+      background: white;
+    }
+    .shape-1 { width: 500px; height: 500px; top: -200px; right: -100px; }
+    .shape-2 { width: 300px; height: 300px; bottom: -100px; left: -50px; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  </style>
+
+  <script>
+    async function checkStatus() {
+      const input = (document.getElementById('ticket-input') as HTMLInputElement);
+      const token = input.value.trim();
+      const result = document.getElementById('ticket-result')!;
+      if (!token) { result.textContent = 'Please enter a ticket number or QR token.'; return; }
+      result.textContent = 'Checking…';
+      try {
+        const res = await fetch(
+          `${import.meta.env.PUBLIC_GATEWAY_URL || ''}/api/v1/repairs/track/${encodeURIComponent(token)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const statusLabel = data.status?.replace(/_/g, ' ') ?? 'Unknown';
+          result.innerHTML = `
+            <span class="font-semibold text-[#f59e0b]">${statusLabel}</span>
+            ${data.ticketNumber ? `<span class="text-gray-400 ml-2">(${data.ticketNumber})</span>` : ''}
+          `;
+        } else {
+          result.textContent = 'Ticket not found. Please check the number and try again.';
+        }
+      } catch {
+        result.textContent = 'Unable to reach server. Please try again later.';
+      }
+    }
+    (window as any).checkStatus = checkStatus;
+  </script>
+</Layout>

@@ -1,0 +1,364 @@
+---
+/**
+ * Public repair tracking page — no auth required.
+ * URL: /track/:ref  (ref = repairTrackingToken stored on RepairTicket)
+ */
+export const prerender = false;
+
+const { ref } = Astro.params;
+
+const GATEWAY = import.meta.env.PUBLIC_GATEWAY_URL ?? 'http://localhost:3001';
+
+type RepairStatus =
+  | 'PENDING_DIAGNOSIS'
+  | 'AWAITING_PARTS'
+  | 'UNDER_REPAIR'
+  | 'QUALITY_CHECK'
+  | 'READY_FOR_PICKUP'
+  | 'COMPLETED'
+  | 'CANCELLED';
+
+interface TrackingPhoto {
+  id: string;
+  url: string;
+  phase: 'BEFORE' | 'DURING' | 'AFTER';
+  caption?: string;
+  capturedAt: string;
+}
+
+interface TrackingData {
+  ticketNumber: string;
+  deviceModel: string;
+  deviceColor?: string;
+  imei?: string;
+  faultDescription: string;
+  status: RepairStatus;
+  estimatedCompletion?: string;
+  technicianName?: string;
+  photos: TrackingPhoto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+let repair: TrackingData | null = null;
+let notFound = false;
+
+try {
+  const res = await fetch(`${GATEWAY}/api/v1/repairs/track/${encodeURIComponent(ref ?? '')}`);
+  if (!res.ok) throw new Error('not-found');
+  repair = await res.json();
+} catch {
+  notFound = true;
+}
+
+const STATUS_STEPS: { key: RepairStatus; label: string; icon: string }[] = [
+  { key: 'PENDING_DIAGNOSIS', label: 'Diagnosis',     icon: '🔍' },
+  { key: 'AWAITING_PARTS',    label: 'Awaiting Parts', icon: '📦' },
+  { key: 'UNDER_REPAIR',      label: 'Under Repair',   icon: '🔧' },
+  { key: 'QUALITY_CHECK',     label: 'Quality Check',  icon: '✅' },
+  { key: 'READY_FOR_PICKUP',  label: 'Ready for Pickup', icon: '🎉' },
+  { key: 'COMPLETED',         label: 'Completed',      icon: '✔️' },
+];
+
+const STATUS_DISPLAY: Record<RepairStatus, { label: string; color: string }> = {
+  PENDING_DIAGNOSIS:  { label: 'Pending Diagnosis',  color: '#f59e0b' },
+  AWAITING_PARTS:     { label: 'Awaiting Parts',      color: '#3b82f6' },
+  UNDER_REPAIR:       { label: 'Under Repair',        color: '#8b5cf6' },
+  QUALITY_CHECK:      { label: 'Quality Check',       color: '#06b6d4' },
+  READY_FOR_PICKUP:   { label: 'Ready for Pickup! 🎉', color: '#10b981' },
+  COMPLETED:          { label: 'Completed',           color: '#6b7280' },
+  CANCELLED:          { label: 'Cancelled',           color: '#ef4444' },
+};
+
+const currentStatusIndex = repair
+  ? STATUS_STEPS.findIndex(s => s.key === repair!.status)
+  : -1;
+
+const afterPhotos = repair?.photos.filter(p => p.phase === 'AFTER') ?? [];
+
+function formatDate(iso?: string) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{repair ? `${repair.ticketNumber} — TechMo Repair Tracker` : 'Repair Tracker — TechMo'}</title>
+  <meta name="description" content="Track your TechMo device repair in real time." />
+  <!-- Prevent search-engine indexing of tracking pages -->
+  <meta name="robots" content="noindex, nofollow" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ─── Header ──────────────────────────────── */
+    header {
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    header .logo { font-size: 1.5rem; font-weight: 800; color: #6366f1; }
+    header .tagline { font-size: 0.8rem; color: #64748b; }
+
+    /* ─── Layout ──────────────────────────────── */
+    main { max-width: 700px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+    /* ─── Cards ───────────────────────────────── */
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+
+    /* ─── Status badge ────────────────────────── */
+    .status-badge {
+      display: inline-block;
+      padding: 0.3rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    /* ─── Device info ─────────────────────────── */
+    .device-name { font-size: 1.4rem; font-weight: 700; color: #f1f5f9; }
+    .device-meta { font-size: 0.85rem; color: #94a3b8; margin-top: 0.25rem; }
+
+    /* ─── Progress stepper ────────────────────── */
+    .steps { display: flex; gap: 0; overflow-x: auto; padding-bottom: 0.5rem; }
+    .step {
+      flex: 1; min-width: 80px; display: flex; flex-direction: column;
+      align-items: center; position: relative; text-align: center;
+    }
+    .step:not(:first-child)::before {
+      content: '';
+      position: absolute;
+      top: 18px; right: 50%; left: -50%;
+      height: 2px;
+      background: #334155;
+      z-index: 0;
+    }
+    .step.done:not(:first-child)::before  { background: #6366f1; }
+    .step-icon {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: #334155; border: 2px solid #475569;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; position: relative; z-index: 1;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .step.done  .step-icon { background: #4f46e5; border-color: #6366f1; }
+    .step.active .step-icon { background: #7c3aed; border-color: #a78bfa; box-shadow: 0 0 0 4px rgba(167,139,250,.25); }
+    .step-label { font-size: 0.65rem; color: #64748b; margin-top: 0.4rem; }
+    .step.done   .step-label { color: #94a3b8; }
+    .step.active .step-label { color: #c4b5fd; font-weight: 600; }
+
+    /* ─── Info rows ───────────────────────────── */
+    .info-row { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.9rem; padding: 0.45rem 0; border-bottom: 1px solid #1e293b; }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #64748b; }
+    .info-value { color: #e2e8f0; text-align: right; }
+
+    /* ─── After photos ────────────────────────── */
+    .photos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+    .photo-thumb {
+      border-radius: 0.5rem;
+      overflow: hidden;
+      background: #0f172a;
+      aspect-ratio: 4/3;
+    }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* ─── ETA banner ──────────────────────────── */
+    .eta-banner {
+      background: linear-gradient(135deg, #1e3a5f, #1e293b);
+      border: 1px solid #2563eb44;
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .eta-icon { font-size: 1.75rem; }
+    .eta-label { font-size: 0.75rem; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.06em; }
+    .eta-date  { font-size: 1rem; font-weight: 600; color: #bfdbfe; }
+
+    /* ─── Not-found / error ───────────────────── */
+    .not-found {
+      text-align: center; padding: 4rem 1rem;
+    }
+    .not-found .nf-icon { font-size: 4rem; margin-bottom: 1rem; }
+    .not-found h1 { font-size: 1.5rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.5rem; }
+    .not-found p  { color: #64748b; font-size: 0.95rem; }
+
+    /* ─── Footer ──────────────────────────────── */
+    footer { text-align: center; padding: 2rem 1rem 1rem; color: #334155; font-size: 0.75rem; }
+    footer a { color: #6366f1; text-decoration: none; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <div class="logo">TechMo</div>
+      <div class="tagline">Repair Tracker</div>
+    </div>
+  </header>
+
+  <main>
+    {notFound ? (
+      <div class="not-found">
+        <div class="nf-icon">🔎</div>
+        <h1>Tracking Not Found</h1>
+        <p>
+          We couldn't find a repair with that tracking link.<br />
+          Please check the link or contact your TechMo store.
+        </p>
+      </div>
+    ) : repair ? (
+      <>
+        {/* Ticket header */}
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap;">
+          <div>
+            <p class="device-name">{repair.deviceModel}{repair.deviceColor ? ` · ${repair.deviceColor}` : ''}</p>
+            <p class="device-meta">Ticket #{repair.ticketNumber}</p>
+            {repair.technicianName && (
+              <p class="device-meta" style="margin-top:0.25rem;">🧑‍🔧 {repair.technicianName}</p>
+            )}
+          </div>
+          <span
+            class="status-badge"
+            style={`background-color: ${STATUS_DISPLAY[repair.status]?.color ?? '#6b7280'}`}
+          >
+            {STATUS_DISPLAY[repair.status]?.label ?? repair.status}
+          </span>
+        </div>
+
+        {/* ETA banner */}
+        {repair.estimatedCompletion && repair.status !== 'COMPLETED' && repair.status !== 'CANCELLED' && (
+          <div class="eta-banner">
+            <div class="eta-icon">🗓</div>
+            <div>
+              <div class="eta-label">Estimated Completion</div>
+              <div class="eta-date">{formatDate(repair.estimatedCompletion)}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Progress stepper */}
+        {repair.status !== 'CANCELLED' && (
+          <div class="card">
+            <div class="card-title">Repair Progress</div>
+            <div class="steps">
+              {STATUS_STEPS.map((step, i) => {
+                const isDone   = i < currentStatusIndex;
+                const isActive = i === currentStatusIndex;
+                return (
+                  <div class={`step${isDone ? ' done' : ''}${isActive ? ' active' : ''}`}>
+                    <div class="step-icon">{step.icon}</div>
+                    <div class="step-label">{step.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Fault description */}
+        <div class="card">
+          <div class="card-title">Fault Reported</div>
+          <p style="font-size:0.9rem; color:#cbd5e1; line-height:1.6;">{repair.faultDescription}</p>
+        </div>
+
+        {/* Details */}
+        <div class="card">
+          <div class="card-title">Details</div>
+          <div>
+            {repair.imei && (
+              <div class="info-row">
+                <span class="info-label">IMEI</span>
+                <span class="info-value" style="font-family:monospace;">{repair.imei}</span>
+              </div>
+            )}
+            <div class="info-row">
+              <span class="info-label">Received</span>
+              <span class="info-value">{formatDate(repair.createdAt)}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Last Updated</span>
+              <span class="info-value">{formatDate(repair.updatedAt)}</span>
+            </div>
+            {repair.status === 'COMPLETED' && (
+              <div class="info-row">
+                <span class="info-label">Completed</span>
+                <span class="info-value">{formatDate(repair.updatedAt)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* After-repair photos */}
+        {afterPhotos.length > 0 && (
+          <div class="card">
+            <div class="card-title">After-Repair Photos</div>
+            <div class="photos-grid">
+              {afterPhotos.map(photo => (
+                <a class="photo-thumb" href={photo.url} target="_blank" rel="noopener noreferrer" title={photo.caption ?? 'After-repair photo'}>
+                  <img src={photo.url} alt={photo.caption ?? `After-repair photo ${photo.id}`} loading="lazy" />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Ready for pickup callout */}
+        {repair.status === 'READY_FOR_PICKUP' && (
+          <div style="background:#052e16; border:1px solid #16a34a55; border-radius:0.75rem; padding:1.25rem; text-align:center; margin-bottom:1.25rem;">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">🎉</div>
+            <p style="font-size:1rem; font-weight:700; color:#4ade80;">Your device is ready!</p>
+            <p style="font-size:0.85rem; color:#86efac; margin-top:0.25rem;">
+              Please bring this page or your ticket number when you visit the store.
+            </p>
+          </div>
+        )}
+      </>
+    ) : null}
+  </main>
+
+  <footer>
+    <p>© {new Date().getFullYear()} TechMo · <a href="/">Visit our website</a></p>
+    <p style="margin-top:0.5rem;">This page is for tracking purposes only and is not publicly indexed.</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,71 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+dist/
+build/
+.next/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+*.pem
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Java
+target/
+.classpath
+.project
+.settings/
+*.jar
+*.class
+
+# Prisma
+.prisma/
+
+# Build outputs
+dist/
+build/
+
+# Misc
+.cache/
+.turbo/
+.turbopack/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+tmp/

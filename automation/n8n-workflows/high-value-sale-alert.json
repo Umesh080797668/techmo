@@ -1,0 +1,35 @@
+{
+  "name": "High-Value Sale Alert (> LKR 50,000)",
+  "nodes": [
+    {
+      "id": "webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "high-value-sale",
+        "httpMethod": "POST"
+      }
+    },
+    {
+      "id": "check_amount",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "number": [{ "value1": "={{ $json.totalAmount }}", "operation": "largerEqual", "value2": 50000 }]
+        }
+      }
+    },
+    {
+      "id": "telegram_alert",
+      "type": "n8n-nodes-base.telegram",
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text":   "🛍️ *High-Value Sale Alert*\n\nOrder: `{{ $json.orderNumber }}`\nAmount: LKR {{ $json.totalAmount | number('0,0') }}\nEmployee: {{ $json.employeeName }}\nCustomer: {{ $json.customerName }}\nTime: {{ $now.toFormat('dd MMM yyyy HH:mm') }}",
+        "parse_mode": "Markdown"
+      }
+    }
+  ],
+  "connections": {
+    "webhook":      { "main": [["check_amount"]] },
+    "check_amount": { "main": [["telegram_alert"], []] }
+  }
+}

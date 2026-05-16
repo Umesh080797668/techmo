@@ -1,0 +1,84 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# TechMo – Grafana Loki Configuration
+# Single-binary mode for local/small-production deployment.
+# ─────────────────────────────────────────────────────────────────────────────
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: info
+
+# ─── Common storage path ──────────────────────────────────────────────────────
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory:  /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+# ─── Query range ──────────────────────────────────────────────────────────────
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+# ─── Schema config ────────────────────────────────────────────────────────────
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: loki_index_
+        period: 24h
+
+# ─── Ruler (alerting rules from Loki LogQL) ───────────────────────────────────
+ruler:
+  alertmanager_url: http://alertmanager:9093   # optional – comment out if not used
+
+# ─── Limits ───────────────────────────────────────────────────────────────────
+limits_config:
+  # Maximum number of log entries in a single push request
+  max_entries_limit_per_query: 50000
+  # Retention period for log data (30 days)
+  retention_period: 720h
+  # Reject log lines larger than 256 KB
+  max_line_size: 262144
+  ingestion_rate_mb: 16
+  ingestion_burst_size_mb: 32
+  # Allow up to 5 streams per unique label set
+  max_streams_per_user: 0   # 0 = unlimited in single-tenant mode
+
+# ─── Compactor (handles retention deletion) ───────────────────────────────────
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
+  delete_request_store: filesystem
+
+# ─── Ingester ─────────────────────────────────────────────────────────────────
+ingester:
+  chunk_idle_period: 1h
+  max_chunk_age: 1h
+  chunk_target_size: 1048576   # 1 MB
+  chunk_retain_period: 30s
+
+# ─── Querier ──────────────────────────────────────────────────────────────────
+querier:
+  max_concurrent: 8
+
+# ─── Frontend ─────────────────────────────────────────────────────────────────
+frontend:
+  max_outstanding_per_tenant: 4096
+  compress_responses: true

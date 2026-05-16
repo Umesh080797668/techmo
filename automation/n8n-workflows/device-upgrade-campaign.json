@@ -1,0 +1,49 @@
+{
+  "name": "Device Upgrade Campaign (Monthly)",
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 10 1 * *" }] }
+      }
+    },
+    {
+      "id": "fetch_upgrade_targets",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/customers/upgrade-targets?deviceAgeDays=730",
+        "headerParameters": {
+          "parameters": [{ "name": "x-n8n-secret", "value": "={{ $env.N8N_SECRET }}" }]
+        }
+      }
+    },
+    {
+      "id": "loop",
+      "type": "n8n-nodes-base.splitInBatches",
+      "parameters": { "batchSize": 20 }
+    },
+    {
+      "id": "build_link",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/notifications/whatsapp-link",
+        "jsonBody": {
+          "phone":    "={{ $json.phone }}",
+          "template": "UPGRADE_CAMPAIGN",
+          "context":  {
+            "name":   "={{ $json.name }}",
+            "device": "={{ $json.currentDevice }}"
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "trigger":               { "main": [["fetch_upgrade_targets"]] },
+    "fetch_upgrade_targets": { "main": [["loop"]] },
+    "loop":                  { "main": [["build_link"]] }
+  }
+}

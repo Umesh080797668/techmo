@@ -1,0 +1,171 @@
+{
+  "name": "Branch Transfer WhatsApp Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "transfer-requested",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-transfer",
+      "name": "Transfer Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the incoming transfer event\nconst body = $input.first().json;\nconst event = body.event;\nconst t = body.payload;\n\n// Format a human-friendly WhatsApp message\nconst messages = {\n  'transfer-requested': [\n    `🏪 *Stock Transfer Request*`,\n    ``,\n    `📦 *Product:* ${t.productName} (×${t.qty})`,\n    `🏠 *From:* ${t.fromBranchId}`,\n    `📍 *To:* ${t.toBranchId}`,\n    `👤 *Requested by:* ${t.requestedBy}`,\n    `🆔 *Ref:* \\`${t.id}\\``,\n    t.notes ? `📝 *Notes:* ${t.notes}` : null,\n    ``,\n    `To approve: POST /api/v1/inventory/transfers/${t.id}/approve`,\n    `To reject:  POST /api/v1/inventory/transfers/${t.id}/reject`,\n  ].filter(Boolean).join('\\n'),\n\n  'transfer-approved': [\n    `✅ *Transfer Approved*`,\n    ``,\n    `📦 ${t.productName} ×${t.qty} has been approved.`,\n    `🚚 Please dispatch the items to *${t.toBranchId}*.`,\n    `🆔 Ref: \\`${t.id}\\``,\n  ].join('\\n'),\n\n  'transfer-rejected': [\n    `❌ *Transfer Request Rejected*`,\n    ``,\n    `Your request for ${t.productName} ×${t.qty} from ${t.fromBranchId} was rejected.`,\n    t.notes ? `Reason: ${t.notes}` : null,\n    `🆔 Ref: \\`${t.id}\\``,\n  ].filter(Boolean).join('\\n'),\n};\n\nreturn [{\n  json: {\n    event,\n    transfer: t,\n    message: messages[event] ?? `Transfer event: ${event} for ${t.id}`,\n    // Resolve branch manager phone: HR service lookup (prior node) with env var fallback\n    const hrEmployee = $('Lookup Branch Manager').first()?.json;\n    const managerPhone = hrEmployee?.data?.[0]?.phone\n      ?? $env.DEFAULT_MANAGER_WHATSAPP\n      ?? $env.MANAGER_WHATSAPP;\n    targetPhone: managerPhone,\n  }\n}];"
+      },
+      "id": "format-message",
+      "name": "Format WhatsApp Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "has-phone",
+              "leftValue": "={{ $json.targetPhone }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-phone",
+      "name": "Has Phone Number?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.WHATSAPP_API_TOKEN }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "messaging_product", "value": "whatsapp" },
+            { "name": "to",               "value": "={{ $('Format WhatsApp Message').item.json.targetPhone }}" },
+            { "name": "type",             "value": "text" },
+            { "name": "text",             "value": "={ \"body\": \"{{ $('Format WhatsApp Message').item.json.message }}\" }" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-whatsapp",
+      "name": "Send WhatsApp (Meta Cloud API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200],
+      "notes": "Uses Meta WhatsApp Cloud API (free tier: 1000 msgs/month). Alternatively use Twilio or UltraMsg."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TELEGRAM_API_URL ?? 'https://api.telegram.org' }}/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "chat_id",    "value": "={{ $env.MANAGER_TELEGRAM_CHAT_ID }}" },
+            { "name": "text",       "value": "={{ $('Format WhatsApp Message').item.json.message }}" },
+            { "name": "parse_mode", "value": "Markdown" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-telegram-fallback",
+      "name": "Telegram Fallback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 400],
+      "notes": "Fallback channel when WhatsApp phone is not configured"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"received\": true, \"event\": \"{{ $('Format WhatsApp Message').item.json.event }}\"}"
+      },
+      "id": "respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ ($env.HR_SERVICE_URL ?? 'http://hr-service:3003') + '/api/v1/employees' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "department", "value": "={{ $json.payload.fromBranchId }}" },
+            { "name": "position",   "value": "Branch Manager" },
+            { "name": "limit",      "value": "1" }
+          ]
+        },
+        "options": { "timeout": 5000 }
+      },
+      "id": "lookup-manager",
+      "name": "Lookup Branch Manager",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "continueOnFail": true,
+      "notes": "Fetches the source-branch manager phone from HR service (department=fromBranchId, position=Branch Manager). Falls back to env var if HR is unavailable."
+    }
+  ],
+  "connections": {
+    "Transfer Webhook": {
+      "main": [[{ "node": "Lookup Branch Manager", "type": "main", "index": 0 }]]
+    },
+    "Lookup Branch Manager": {
+      "main": [[{ "node": "Format WhatsApp Message", "type": "main", "index": 0 }]]
+    },
+    "Format WhatsApp Message": {
+      "main": [[{ "node": "Has Phone Number?", "type": "main", "index": 0 }]]
+    },
+    "Has Phone Number?": {
+      "main": [
+        [{ "node": "Send WhatsApp (Meta Cloud API)", "type": "main", "index": 0 }],
+        [{ "node": "Telegram Fallback",              "type": "main", "index": 0 }]
+      ]
+    },
+    "Send WhatsApp (Meta Cloud API)": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    },
+    "Telegram Fallback": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [
+    { "createdAt": "2025-01-15T00:00:00.000Z", "updatedAt": "2025-01-15T00:00:00.000Z", "id": "1", "name": "inventory" },
+    { "createdAt": "2025-01-15T00:00:00.000Z", "updatedAt": "2025-01-15T00:00:00.000Z", "id": "2", "name": "notifications" }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-15T00:00:00.000Z",
+  "versionId": "1"
+}

@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Disallow admin paths
+Disallow: /api/
+Disallow: /_astro/
+
+# Sitemap location
+Sitemap: https://techmo.lk/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 5

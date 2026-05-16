@@ -1,0 +1,157 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "description": "TechMo Gamified Repair Leaderboard — highest repair success rate, fastest turnaround, and daily stats. Designed for breakroom TV display.",
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "🏆 Repair Leaderboard",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "techmo-postgres" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          },
+          "unit": "percent",
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "displayMode": "lcd",
+        "minVizWidth": 0,
+        "minVizHeight": 0
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "techmo-postgres" },
+          "rawSql": "SELECT\n  e.name AS metric,\n  ROUND(\n    100.0 * SUM(CASE WHEN r.status = 'Completed' AND r2.id IS NULL THEN 1 ELSE 0 END)\n    / NULLIF(COUNT(r.id), 0), 1\n  ) AS value\nFROM repairs r\nJOIN employees e ON e.id = r.assigned_technician_id\nLEFT JOIN repairs r2\n  ON r2.device_imei = r.device_imei\n  AND r2.created_at BETWEEN r.completed_at AND r.completed_at + INTERVAL '14 days'\n  AND r2.id <> r.id\nWHERE r.created_at > NOW() - INTERVAL '90 days'\n  AND r.assigned_technician_id IS NOT NULL\nGROUP BY e.id, e.name\nHAVING COUNT(r.id) >= 5\nORDER BY value DESC\nLIMIT 5",
+          "format": "table"
+        }
+      ],
+      "title": "🏅 Top 5 — Repair Success Rate (90 days)",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "techmo-postgres" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 120 },
+              { "color": "red", "value": 240 }
+            ]
+          },
+          "unit": "m",
+          "displayName": "${__field.labels.metric}"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "id": 2,
+      "options": {
+        "displayMode": "lcd",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "minVizWidth": 0,
+        "minVizHeight": 0,
+        "textMode": "auto",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "techmo-postgres" },
+          "rawSql": "SELECT\n  e.name AS metric,\n  ROUND(AVG(EXTRACT(EPOCH FROM (r.completed_at - r.created_at)) / 60)::numeric, 0) AS value\nFROM repairs r\nJOIN employees e ON e.id = r.assigned_technician_id\nWHERE r.status = 'Completed'\n  AND r.completed_at IS NOT NULL\n  AND r.created_at > NOW() - INTERVAL '30 days'\nGROUP BY e.id, e.name\nHAVING COUNT(*) >= 3\nORDER BY value ASC\nLIMIT 5",
+          "format": "table"
+        }
+      ],
+      "title": "⚡ Fastest Average Turnaround (30 days, minutes)",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "techmo-postgres" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 15 } }
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 9 },
+      "id": 3,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "techmo-postgres" },
+          "rawSql": "SELECT\n  DATE_TRUNC('day', r.created_at) AS time,\n  e.name AS metric,\n  COUNT(*) AS value\nFROM repairs r\nJOIN employees e ON e.id = r.assigned_technician_id\nWHERE r.created_at > NOW() - INTERVAL '14 days'\nGROUP BY 1, e.name\nORDER BY 1",
+          "format": "time_series"
+        }
+      ],
+      "title": "📈 Daily Repairs per Technician (14 days)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "techmo-postgres" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" }
+          }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Success Rate" }, "properties": [{ "id": "custom.cellOptions", "value": { "type": "color-background" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 80 }, { "color": "green", "value": 95 }] } }] }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 17 },
+      "id": 4,
+      "options": { "showHeader": true, "footer": { "show": false } },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "techmo-postgres" },
+          "rawSql": "SELECT\n  e.name                                    AS \"Technician\",\n  COUNT(r.id)                               AS \"Total Repairs\",\n  SUM(CASE WHEN r.status='Completed' THEN 1 ELSE 0 END) AS \"Completed\",\n  ROUND(100.0 * SUM(CASE WHEN r.status='Completed' AND r2.id IS NULL THEN 1 ELSE 0 END) / NULLIF(COUNT(r.id),0), 1) AS \"Success Rate\",\n  ROUND(AVG(EXTRACT(EPOCH FROM (r.completed_at - r.created_at))/60)::numeric,0) AS \"Avg Minutes\"\nFROM repairs r\nJOIN employees e ON e.id = r.assigned_technician_id\nLEFT JOIN repairs r2\n  ON r2.device_imei = r.device_imei\n  AND r2.created_at BETWEEN r.completed_at AND r.completed_at + INTERVAL '14 days'\n  AND r2.id <> r.id\nWHERE r.created_at > NOW() - INTERVAL '30 days'\nGROUP BY e.id, e.name\nORDER BY \"Success Rate\" DESC NULLS LAST",
+          "format": "table"
+        }
+      ],
+      "title": "📋 Full Technician Scorecard (30 days)",
+      "type": "table"
+    }
+  ],
+  "refresh": "5m",
+  "schemaVersion": 38,
+  "tags": ["techmo", "repairs", "leaderboard", "breakroom"],
+  "templating": { "list": [] },
+  "time": { "from": "now-30d", "to": "now" },
+  "timepicker": {},
+  "timezone": "Asia/Colombo",
+  "title": "TechMo Repair Leaderboard",
+  "uid": "techmo-repair-leaderboard",
+  "version": 1
+}

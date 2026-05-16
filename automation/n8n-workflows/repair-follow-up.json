@@ -1,0 +1,51 @@
+{
+  "name": "Repair Follow-Up (3 days after creation)",
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 6 }] }
+      }
+    },
+    {
+      "id": "fetch_repairs",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/repairs?status=PENDING_DIAGNOSIS&createdBefore={{ $now.minus(3, 'days').toISO() }}",
+        "authentication": "headerAuth",
+        "headerParameters": {
+          "parameters": [{ "name": "x-n8n-secret", "value": "={{ $env.N8N_SECRET }}" }]
+        }
+      }
+    },
+    {
+      "id": "loop_repairs",
+      "type": "n8n-nodes-base.splitInBatches",
+      "parameters": { "batchSize": 10 }
+    },
+    {
+      "id": "build_whatsapp_link",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/notifications/whatsapp-link",
+        "jsonBody": {
+          "phone":    "={{ $json.customerPhone }}",
+          "template": "REPAIR_FOLLOWUP",
+          "context":  {
+            "name":         "={{ $json.customerName }}",
+            "ticketNumber": "={{ $json.ticketNumber }}",
+            "device":       "={{ $json.deviceBrand + ' ' + $json.deviceModel }}"
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "trigger":          { "main": [["fetch_repairs"]] },
+    "fetch_repairs":    { "main": [["loop_repairs"]] },
+    "loop_repairs":     { "main": [["build_whatsapp_link"]] }
+  }
+}

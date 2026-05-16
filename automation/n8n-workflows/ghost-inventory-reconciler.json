@@ -1,0 +1,135 @@
+{
+  "name": "Ghost Inventory Reconciler",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 2 * * *" }]
+        }
+      },
+      "name": "Nightly Cron (02:00)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300],
+      "id": "n1"
+    },
+    {
+      "parameters": {
+        "url": "=http://meilisearch:7700/indexes/products/search",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Authorization", "value": "=Bearer {{$env.MEILISEARCH_API_KEY}}" }]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "q", "value": "" },
+            { "name": "limit", "value": "5000" },
+            { "name": "attributesToRetrieve", "value": "[\"sku\",\"id\"]" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Fetch Meilisearch SKUs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 300],
+      "id": "n2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT sku, id FROM products WHERE deleted_at IS NULL",
+        "options": {}
+      },
+      "name": "Fetch PostgreSQL SKUs",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [440, 480],
+      "credentials": { "postgres": { "id": "postgres-main", "name": "TechMo PostgreSQL" } },
+      "id": "n3"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Build sets\nconst meiliHits  = items[0].json.hits || [];\nconst pgRows     = items[1].json || [];\n\nconst meiliSkus  = new Set(meiliHits.map(h => h.sku));\nconst pgSkus     = new Set(pgRows.map(r => r.sku));\n\n// Ghost SKUs: in Meilisearch but NOT in PostgreSQL\nconst ghostSkus  = [...meiliSkus].filter(s => !pgSkus.has(s));\n\n// Missing SKUs: in PostgreSQL but NOT in Meilisearch (index drift)\nconst missingSkus = [...pgSkus].filter(s => !meiliSkus.has(s));\n\nreturn [{\n  json: {\n    ghostCount:   ghostSkus.length,\n    missingCount: missingSkus.length,\n    ghostSkus,\n    missingSkus,\n    checkedAt:    new Date().toISOString(),\n    healthy:      ghostSkus.length === 0 && missingSkus.length === 0\n  }\n}];"
+      },
+      "name": "Compare & Find Ghosts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 380],
+      "id": "n4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [{ "value1": "={{$json.healthy}}", "value2": true }]
+        }
+      },
+      "name": "Any Ghosts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 380],
+      "id": "n5"
+    },
+    {
+      "parameters": {
+        "url": "=http://meilisearch:7700/indexes/products/documents/delete-batch",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Authorization", "value": "=Bearer {{$env.MEILISEARCH_API_KEY}}" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json.ghostSkus)}}",
+        "options": {}
+      },
+      "name": "Delete Ghost SKUs from Meilisearch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 260],
+      "id": "n6"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.MANAGER_TELEGRAM_CHAT_ID}}",
+        "text": "=⚠️ *Ghost Inventory Alert*\n\n🗑 Removed *{{$json.ghostCount}}* ghost SKU(s) from Meilisearch index.\n📥 Missing from index: *{{$json.missingCount}}* SKU(s).\n\nGhost SKUs: `{{$json.ghostSkus.slice(0,10).join(', ')}}{{$json.ghostCount > 10 ? '...' : ''}}`\n\n_TechMo n8n · {{$json.checkedAt}}_",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "name": "Telegram Alert — Ghosts Found",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [1340, 260],
+      "credentials": { "telegramApi": { "id": "telegram-bot", "name": "TechMo Telegram Bot" } },
+      "id": "n7"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.MANAGER_TELEGRAM_CHAT_ID}}",
+        "text": "=✅ *Ghost Inventory Check Passed*\n\nMeilisearch ↔ PostgreSQL are fully in sync. No ghost SKUs detected.\n\n_TechMo n8n · {{$json.checkedAt}}_",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "name": "Telegram — All Clear",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [1120, 500],
+      "credentials": { "telegramApi": { "id": "telegram-bot", "name": "TechMo Telegram Bot" } },
+      "id": "n8"
+    }
+  ],
+  "connections": {
+    "Nightly Cron (02:00)":           { "main": [[{ "node": "Fetch Meilisearch SKUs", "type": "main", "index": 0 }, { "node": "Fetch PostgreSQL SKUs", "type": "main", "index": 0 }]] },
+    "Fetch Meilisearch SKUs":         { "main": [[{ "node": "Compare & Find Ghosts", "type": "main", "index": 0 }]] },
+    "Fetch PostgreSQL SKUs":          { "main": [[{ "node": "Compare & Find Ghosts", "type": "main", "index": 1 }]] },
+    "Compare & Find Ghosts":          { "main": [[{ "node": "Any Ghosts?", "type": "main", "index": 0 }]] },
+    "Any Ghosts?":                    { "main": [[{ "node": "Delete Ghost SKUs from Meilisearch", "type": "main", "index": 0 }], [{ "node": "Telegram — All Clear", "type": "main", "index": 0 }]] },
+    "Delete Ghost SKUs from Meilisearch": { "main": [[{ "node": "Telegram Alert — Ghosts Found", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "inventory" }, { "name": "meilisearch" }, { "name": "reconciler" }]
+}

@@ -1,0 +1,50 @@
+{
+  "name": "Loyalty Re-Engagement (Inactive 60 days)",
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 11 * * 3" }] }
+      }
+    },
+    {
+      "id": "fetch_inactive",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/customers/inactive?inactiveDays=60&hasPurchases=true",
+        "headerParameters": {
+          "parameters": [{ "name": "x-n8n-secret", "value": "={{ $env.N8N_SECRET }}" }]
+        }
+      }
+    },
+    {
+      "id": "loop",
+      "type": "n8n-nodes-base.splitInBatches",
+      "parameters": { "batchSize": 20 }
+    },
+    {
+      "id": "build_link",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/notifications/whatsapp-link",
+        "jsonBody": {
+          "phone":    "={{ $json.phone }}",
+          "template": "LOYALTY_REENGAGEMENT",
+          "context":  {
+            "name":   "={{ $json.name }}",
+            "points": "={{ $json.loyaltyPoints }}",
+            "tier":   "={{ $json.loyaltyTier }}"
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "trigger":        { "main": [["fetch_inactive"]] },
+    "fetch_inactive": { "main": [["loop"]] },
+    "loop":           { "main": [["build_link"]] }
+  }
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      width: 75mm;
+      min-height: 100mm;
+      padding: 6mm;
+      color: #111;
+    }
+    .brand { font-size: 10px; font-weight: bold; color: #1e40af; text-align: center;
+             letter-spacing: 1px; margin-bottom: 4px; }
+    .ticket { font-size: 16px; font-weight: 900; text-align: center; color: #111;
+              letter-spacing: 1px; margin-bottom: 3px; }
+    .device { font-size: 9px; color: #475569; text-align: center; margin-bottom: 5px;
+              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .status-badge {
+      display: block; text-align: center;
+      background: #dbeafe; color: #1e40af;
+      font-size: 9px; font-weight: bold; letter-spacing: .5px;
+      padding: 3px 8px; border-radius: 99px; margin-bottom: 6px;
+    }
+    .qr-wrap { text-align: center; margin: 6px 0; }
+    .qr-wrap img { width: 50mm; height: 50mm; }
+    .hint { font-size: 8px; color: #94a3b8; text-align: center; line-height: 1.4; margin-top: 4px; }
+    hr { border: none; border-top: 1px dashed #cbd5e1; margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <div class="brand">TECHMO ELECTRONICS</div>
+  <div class="ticket">{{ ticket_number }}</div>
+  <div class="device">{{ device }}</div>
+
+  <span class="status-badge">{{ status.replace("_", " ") }}</span>
+
+  <hr />
+
+  <div class="qr-wrap">
+    <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code" />
+  </div>
+
+  <div class="hint">
+    Scan to track real-time repair status<br>
+    <strong>techmo.lk/track</strong>
+  </div>
+
+  <hr />
+  <div class="hint" style="margin-top: 4px;">
+    Keep this sticker on your device until collection.
+  </div>
+</body>
+</html>

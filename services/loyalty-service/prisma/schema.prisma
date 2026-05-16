@@ -1,0 +1,129 @@
+// TechMo Loyalty/CRM Service – Prisma Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Customer {
+  id                  String       @id @default(uuid())
+  firstName           String
+  lastName            String
+  email               String?      @unique
+  phone               String       @unique
+  tier                LoyaltyTier  @default(NORMAL)
+  loyaltyPoints       Int          @default(0)
+  notes               String?
+  address             String?
+  nic                 String?      @unique
+  isActive            Boolean      @default(true)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  // Customer portal auth fields
+  passwordHash        String?
+  refreshToken        String?
+  lastLoginAt         DateTime?
+  failedLoginAttempts Int          @default(0)
+  lockedUntil         DateTime?
+  emailVerified       Boolean      @default(false)
+  mustChangePassword  Boolean      @default(false)
+
+  loyaltyTransactions LoyaltyTransaction[]
+  otps                CustomerOtp[]
+  reviews             Review[]
+
+  @@map("customers")
+}
+
+model CustomerOtp {
+  id         String    @id @default(uuid())
+  target     String    // phone number or email address
+  type       OtpType
+  otp        String    @db.Char(6)
+  expiresAt  DateTime
+  used       Boolean   @default(false)
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdAt  DateTime  @default(now())
+
+  @@map("customer_otps")
+}
+
+enum OtpType {
+  PHONE_LOGIN
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model LoyaltyTransaction {
+  id           String         @id @default(uuid())
+  customerId   String
+  customer     Customer       @relation(fields: [customerId], references: [id])
+  type         LoyaltyTxnType
+  points       Int            // positive = earn, negative = redeem
+  reference    String?        // orderId or repairId
+  description  String?
+  performedBy  String?        // userId (for manual adjustments)
+  balanceAfter Int?           // snapshot of points balance after this transaction
+  createdAt    DateTime       @default(now())  // immutable
+
+  @@map("loyalty_transactions")
+}
+
+enum LoyaltyTier {
+  NORMAL
+  PREMIUM
+}
+
+enum LoyaltyTxnType {
+  PURCHASE_EARN
+  REPAIR_EARN
+  REDEMPTION
+  MANUAL_ADJUSTMENT
+  EXPIRY
+}
+
+// ─── Reviews / Testimonials ───────────────────────────────────────────────────
+
+model Review {
+  id          String        @id @default(uuid())
+  customerId  String
+  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  rating      Int           // 1-5
+  title       String?       @db.VarChar(120)
+  body        String        @db.VarChar(1200)
+
+  /// Cloudinary URL of optional customer photo (happy-customers gallery)
+  photoUrl    String?
+
+  /// Admin-controlled flags
+  status      ReviewStatus  @default(PENDING)
+  featured    Boolean       @default(false)  // shown in hero gallery
+
+  type        ReviewType    @default(GENERAL)
+  /// orderId or repairId when the review is about a specific transaction
+  referenceId String?
+
+  adminNote   String?       // internal note by the moderator
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("reviews")
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReviewType {
+  GENERAL
+  PRODUCT
+  REPAIR
+}

@@ -1,0 +1,192 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+
+const values = [
+  {
+    icon: '🔧',
+    title: 'Expert Craftsmanship',
+    desc: 'Every repair is performed by certified technicians with years of hands-on experience across all major brands.',
+  },
+  {
+    icon: '🛡️',
+    title: 'Genuine Parts',
+    desc: 'We source only OEM and high-grade replacement parts to ensure your device performs like new.',
+  },
+  {
+    icon: '⚡',
+    title: 'Fast Turnaround',
+    desc: 'Most repairs completed same-day. We respect your time and keep you updated every step of the way.',
+  },
+  {
+    icon: '💯',
+    title: 'Satisfaction Guarantee',
+    desc: 'All repairs come with a 90-day warranty. If something isn\'t right, we\'ll fix it — free of charge.',
+  },
+  {
+    icon: '🤝',
+    title: 'Transparent Pricing',
+    desc: 'No hidden fees. You receive a full quote before any work begins so you\'re always in control.',
+  },
+  {
+    icon: '🌍',
+    title: 'Nationwide Reach',
+    desc: 'With branches in Colombo, Nugegoda, and Kandy, we\'re always close by when you need us most.',
+  },
+];
+
+const milestones = [
+  { year: '2015', event: 'TechMo founded in Colombo 03 with a team of 4 technicians.' },
+  { year: '2017', event: 'Expanded to Nugegoda — second branch opened to serve the suburbs.' },
+  { year: '2019', event: 'Introduced the official Apple authorised repair programme.' },
+  { year: '2021', event: 'Launched online product catalogue and repair tracking portal.' },
+  { year: '2022', event: 'Kandy branch opened — first expansion outside the Western Province.' },
+  { year: '2024', event: 'Launched TechMo Loyalty programme with 50 000+ active members.' },
+];
+
+const team = [
+  { name: 'Ruwan Perera', role: 'Founder & CEO', emoji: '👨‍💼' },
+  { name: 'Dilani Fernando', role: 'Head of Repairs', emoji: '🔧' },
+  { name: 'Kasun Silva', role: 'Product Manager', emoji: '📱' },
+  { name: 'Nimesha Jayawardena', role: 'Customer Experience Lead', emoji: '🌟' },
+];
+---
+
+<Layout
+  title="About TechMo — Sri Lanka's Premier Device Repair & Retail"
+  description="Learn about TechMo's journey, our values, and the team behind Sri Lanka's most trusted device repair and retail brand."
+>
+  <Navbar />
+
+  <!-- Hero -->
+  <section class="bg-gradient-to-br from-[#0f172a] via-[#1e3a8a] to-[#1e40af] text-white py-20 px-4">
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="text-6xl mb-4">⚡</div>
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">Powering Sri Lanka's Digital Life</h1>
+      <p class="text-lg text-blue-200 max-w-2xl mx-auto">
+        Since 2015, TechMo has been the trusted destination for device repair, genuine accessories, and expert advice.
+        We don't just fix phones — we restore confidence.
+      </p>
+    </div>
+  </section>
+
+  <!-- Story -->
+  <section class="py-16 px-4 bg-white">
+    <div class="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <h2 class="text-3xl font-bold text-[#0f172a] mb-4">Our Story</h2>
+        <p class="text-[#64748b] leading-relaxed mb-4">
+          TechMo started as a humble repair shop in the heart of Colombo 03. Our founder, Ruwan Perera, 
+          noticed that Sri Lankans deserved better — faster repairs, fairer prices, and honest advice when 
+          it came to their most important devices.
+        </p>
+        <p class="text-[#64748b] leading-relaxed mb-4">
+          What began as a two-bench workshop quickly grew into the island's most recognised multi-branch repair 
+          and retail network. Today, we serve thousands of customers each month across three city branches, 
+          with plans to expand further.
+        </p>
+        <p class="text-[#64748b] leading-relaxed">
+          We've repaired over <strong class="text-[#0f172a]">250,000 devices</strong>, maintained a 
+          <strong class="text-[#0f172a]">4.8-star average rating</strong>, and built a loyalty community 
+          of more than <strong class="text-[#0f172a]">50,000 members</strong>. None of that happens without 
+          trust — and trust is everything we work toward, every day.
+        </p>
+      </div>
+      <div class="bg-[#f8fafc] rounded-3xl p-8 border border-gray-100">
+        <div class="grid grid-cols-2 gap-6 text-center">
+          {[
+            { value: '9+', label: 'Years in Business' },
+            { value: '250K+', label: 'Devices Repaired' },
+            { value: '50K+', label: 'Loyalty Members' },
+            { value: '4.8★', label: 'Average Rating' },
+          ].map(s => (
+            <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+              <div class="text-3xl font-bold text-[#1e40af] mb-1">{s.value}</div>
+              <div class="text-xs text-[#64748b] font-medium">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Values -->
+  <section class="py-16 px-4 bg-[#f8fafc]">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-10">
+        <h2 class="text-3xl font-bold text-[#0f172a]">What We Stand For</h2>
+        <p class="text-[#64748b] mt-2">Six principles that guide everything we do.</p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {values.map(v => (
+          <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div class="text-3xl mb-3">{v.icon}</div>
+            <h3 class="font-bold text-[#0f172a] mb-2">{v.title}</h3>
+            <p class="text-sm text-[#64748b] leading-relaxed">{v.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Timeline -->
+  <section class="py-16 px-4 bg-white">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-10">
+        <h2 class="text-3xl font-bold text-[#0f172a]">Our Journey</h2>
+      </div>
+      <div class="relative">
+        <div class="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-100"></div>
+        <div class="space-y-8">
+          {milestones.map((m) => (
+            <div class="flex gap-5 relative">
+              <div class="w-12 h-12 rounded-full bg-[#1e40af] text-white text-sm font-bold flex items-center justify-center shrink-0 z-10 shadow-md">
+                {m.year.slice(2)}
+              </div>
+              <div class="pt-2 pb-2">
+                <span class="text-xs font-bold text-[#1e40af] tracking-widest">{m.year}</span>
+                <p class="text-sm text-[#475569] mt-0.5">{m.event}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Team -->
+  <section class="py-16 px-4 bg-[#f8fafc]">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-10">
+        <h2 class="text-3xl font-bold text-[#0f172a]">Meet the Team</h2>
+        <p class="text-[#64748b] mt-2">The people who make TechMo tick.</p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {team.map(t => (
+          <div class="bg-white rounded-2xl p-6 text-center border border-gray-100 shadow-sm hover:-translate-y-1 transition-transform duration-200">
+            <div class="text-5xl mb-3">{t.emoji}</div>
+            <h3 class="font-bold text-[#0f172a]">{t.name}</h3>
+            <p class="text-xs text-[#64748b] mt-0.5">{t.role}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-16 px-4 bg-[#1e40af] text-white text-center">
+    <h2 class="text-3xl font-bold mb-3">Ready to experience the TechMo difference?</h2>
+    <p class="text-blue-200 mb-6 max-w-lg mx-auto">Walk in, call ahead, or send us an inquiry — we're here to help.</p>
+    <div class="flex flex-wrap justify-center gap-3">
+      <a href="/contact" class="bg-white text-[#1e40af] font-bold py-3 px-7 rounded-xl hover:bg-blue-50 transition-colors">
+        Contact Us
+      </a>
+      <a href="/products" class="border border-white/30 text-white font-semibold py-3 px-7 rounded-xl hover:bg-white/10 transition-colors">
+        Browse Products
+      </a>
+    </div>
+  </section>
+
+  <Footer />
+</Layout>

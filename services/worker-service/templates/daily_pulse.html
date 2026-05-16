@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>TechMo — Daily Pulse · {{ date }}</title>
+  <style>
+    @page { size: A4; margin: 18mm 15mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1a1a2e; font-size: 11pt; }
+
+    /* Header */
+    .header { display: flex; justify-content: space-between; align-items: center;
+               border-bottom: 3px solid #1d4ed8; padding-bottom: 10px; margin-bottom: 22px; }
+    .logo-block h1 { font-size: 20pt; font-weight: 800; color: #1d4ed8; letter-spacing: -0.5px; }
+    .logo-block p  { font-size: 9pt; color: #64748b; margin-top: 2px; }
+    .date-block { text-align: right; }
+    .date-block .date  { font-size: 14pt; font-weight: 700; color: #0f172a; }
+    .date-block .label { font-size: 8pt; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* KPI row */
+    .kpi-row { display: flex; gap: 12px; margin-bottom: 20px; }
+    .kpi { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+            padding: 14px; text-align: center; }
+    .kpi .value { font-size: 22pt; font-weight: 800; color: #1d4ed8; }
+    .kpi .unit  { font-size: 8pt; color: #64748b; display: block; margin-top: 2px; }
+    .kpi .label { font-size: 8pt; color: #94a3b8; text-transform: uppercase;
+                   letter-spacing: 0.8px; margin-top: 6px; }
+
+    /* Section title */
+    .section-title { font-size: 10pt; font-weight: 700; text-transform: uppercase;
+                      letter-spacing: 1px; color: #475569; border-left: 4px solid #1d4ed8;
+                      padding-left: 8px; margin-bottom: 10px; margin-top: 18px; }
+
+    /* Top products table */
+    table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+    thead th { background: #1d4ed8; color: #fff; text-align: left; padding: 7px 10px;
+                font-size: 9pt; text-transform: uppercase; letter-spacing: 0.5px; }
+    tbody tr:nth-child(even) { background: #f1f5f9; }
+    tbody td { padding: 6px 10px; color: #334155; }
+    tbody td.num { text-align: right; }
+    tfoot td { padding: 6px 10px; font-weight: 700; color: #1e293b;
+                border-top: 2px solid #e2e8f0; font-size: 10pt; }
+    tfoot td.num { text-align: right; }
+
+    /* Alert badge */
+    .alert-row { display: flex; align-items: center; gap: 10px;
+                  background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px;
+                  padding: 10px 14px; margin-top: 16px; }
+    .alert-row .icon { font-size: 18pt; }
+    .alert-row p   { font-size: 10pt; color: #991b1b; }
+    .alert-row strong { font-weight: 700; }
+
+    /* Footer */
+    .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #e2e8f0;
+               font-size: 8pt; color: #94a3b8; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-block">
+      <h1>TechMo Electronics</h1>
+      <p>Daily Pulse Report · {{ branch }}</p>
+    </div>
+    <div class="date-block">
+      <div class="label">Report Date</div>
+      <div class="date">{{ date }}</div>
+    </div>
+  </div>
+
+  <!-- KPI row -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="value">LKR {{ "{:,.0f}".format(total_sales) }}</div>
+      <span class="unit">Total Revenue</span>
+      <div class="label">Sales Today</div>
+    </div>
+    <div class="kpi">
+      <div class="value">{{ total_transactions }}</div>
+      <span class="unit">Transactions</span>
+      <div class="label">Sales Tickets</div>
+    </div>
+    <div class="kpi">
+      <div class="value">{{ total_repairs_completed }}</div>
+      <span class="unit">Repairs</span>
+      <div class="label">Completed Today</div>
+    </div>
+  </div>
+
+  <!-- Top products -->
+  <div class="section-title">Top 5 Products by Revenue</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Product</th>
+        <th class="num">Units Sold</th>
+        <th class="num">Revenue (LKR)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in top_products %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ p.name }}</td>
+        <td class="num">{{ p.qty }}</td>
+        <td class="num">{{ "{:,.0f}".format(p.revenue) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3">Total (Top 5)</td>
+        <td class="num">{{ "{:,.0f}".format(top_products | sum(attribute='revenue')) }}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- Battery alerts -->
+  {% if battery_alerts > 0 %}
+  <div class="alert-row">
+    <div class="icon">🔋</div>
+    <p>
+      <strong>{{ battery_alerts }} device(s)</strong> flagged for battery degradation (&lt;80% capacity).
+      Review the Battery Health dashboard in Grafana and contact affected customers.
+    </p>
+  </div>
+  {% endif %}
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>Generated by {{ generated_by }}</span>
+    <span>TechMo Electronics POS · Confidential</span>
+  </div>
+
+</body>
+</html>

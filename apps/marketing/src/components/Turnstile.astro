@@ -1,0 +1,21 @@
+---
+// Cloudflare Turnstile widget component
+// Props:
+//   sitekey  — CF Turnstile site key (required)
+//   theme    — 'light' | 'dark' | 'auto' (default: 'auto')
+//   callback — name of global JS function to call with token (default: 'onTurnstileSuccess')
+const {
+  sitekey,
+  theme = 'auto',
+  callback = 'onTurnstileSuccess',
+} = Astro.props;
+---
+
+<div
+  class="cf-turnstile"
+  data-sitekey={sitekey}
+  data-theme={theme}
+  data-callback={callback}
+></div>
+
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

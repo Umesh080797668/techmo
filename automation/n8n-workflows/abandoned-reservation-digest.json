@@ -1,0 +1,46 @@
+{
+  "name": "Abandoned Reservation Digest (Daily 10:00)",
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 10 * * *" }] }
+      }
+    },
+    {
+      "id": "fetch_expired",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/reservations?status=EXPIRED&expiredAfter={{ $now.startOf('day').minus(1, 'day').toISO() }}",
+        "headerParameters": {
+          "parameters": [{ "name": "x-n8n-secret", "value": "={{ $env.N8N_SECRET }}" }]
+        }
+      }
+    },
+    {
+      "id": "has_items",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "number": [{ "value1": "={{ $json.length }}", "operation": "larger", "value2": 0 }]
+        }
+      }
+    },
+    {
+      "id": "telegram_digest",
+      "type": "n8n-nodes-base.telegram",
+      "parameters": {
+        "chatId":     "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text":       "📋 *Abandoned Reservation Digest*\n\n{{ $json.map(r => `• ${r.productName} — ${r.customerName} (expired ${r.reservedUntil})`).join('\\n') }}\n\nTotal: {{ $json.length }} reservations",
+        "parse_mode": "Markdown"
+      }
+    }
+  ],
+  "connections": {
+    "trigger":      { "main": [["fetch_expired"]] },
+    "fetch_expired":{ "main": [["has_items"]] },
+    "has_items":    { "main": [["telegram_digest"], []] }
+  }
+}

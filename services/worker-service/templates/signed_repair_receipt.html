@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #111; max-width: 420px; margin: auto; }
+    .header { background: #1e40af; color: white; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+    .header h1 { font-size: 16px; font-weight: bold; }
+    .header p  { font-size: 10px; opacity: .85; margin-top: 2px; }
+    .ticket-banner { background: #eff6ff; border-bottom: 2px solid #1e40af; padding: 10px 20px; text-align: center; }
+    .ticket-banner .num { font-size: 22px; font-weight: 900; color: #1e40af; letter-spacing: 1px; }
+    .section { padding: 12px 20px; border-bottom: 1px solid #e2e8f0; }
+    .section:last-child { border-bottom: none; }
+    .label { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+    .value { font-size: 13px; font-weight: 600; color: #111; }
+    .value.mono { font-family: monospace; }
+
+    /* Photo grid */
+    .photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .photos img { width: 90px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; }
+
+    /* Signature */
+    .sig-box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; margin-top: 8px; text-align: center; }
+    .sig-box img { max-height: 80px; max-width: 100%; }
+    .sig-date { font-size: 9px; color: #64748b; margin-top: 4px; }
+
+    .completed-badge {
+      display: inline-block;
+      background: #dcfce7; color: #15803d;
+      padding: 4px 14px; border-radius: 99px;
+      font-size: 11px; font-weight: bold;
+    }
+    .footer { text-align: center; font-size: 9px; color: #94a3b8; padding: 12px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>TechMo — Repair Completion Receipt</h1>
+      <p>This document confirms device collection with digital signature.</p>
+    </div>
+  </div>
+
+  <div class="ticket-banner">
+    <div class="num">{{ ticket_number }}</div>
+    <span class="completed-badge">✓ COMPLETED</span>
+  </div>
+
+  <div class="section">
+    <div class="label">Customer</div>
+    <div class="value">{{ customer_name }}</div>
+    <div style="font-size:11px;color:#64748b;margin-top:2px;">{{ customer_phone }}</div>
+  </div>
+
+  <div class="section">
+    <div class="label">Device</div>
+    <div class="value">{{ device }}</div>
+    <div class="label" style="margin-top:8px;">Issue Reported</div>
+    <div class="value">{{ issue }}</div>
+  </div>
+
+  {% if technician_notes %}
+  <div class="section">
+    <div class="label">Technician Notes</div>
+    <div class="value">{{ technician_notes }}</div>
+  </div>
+  {% endif %}
+
+  {% if final_cost %}
+  <div class="section">
+    <div class="label">Final Cost Charged</div>
+    <div class="value" style="color:#1e40af;">LKR {{ "%.2f"|format(final_cost) }}</div>
+  </div>
+  {% endif %}
+
+  {% if after_photos %}
+  <div class="section">
+    <div class="label">Condition After Repair (Photos)</div>
+    <div class="photos">
+      {% for url in after_photos %}
+        <img src="{{ url }}" alt="After photo" />
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="section">
+    <div class="label">Customer Signature</div>
+    <div class="sig-box">
+      <img src="{{ signature_data_url }}" alt="Customer signature" />
+      <div class="sig-date">Signed on {{ completed_at }}</div>
+    </div>
+    <p style="font-size:9px;color:#64748b;margin-top:8px;">
+      By signing, the customer confirms the device has been received in satisfactory condition.
+    </p>
+  </div>
+
+  <div class="footer">
+    TechMo Electronics · Professional Repair Service<br>
+    This document was generated digitally and is legally binding.
+  </div>
+</body>
+</html>

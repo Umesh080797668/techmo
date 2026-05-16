@@ -1,0 +1,105 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# TechMo – Promtail Configuration
+# Ships container logs from Docker to Grafana Loki.
+# ─────────────────────────────────────────────────────────────────────────────
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+# Loki push endpoint
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    # Batch logs and send every 2 seconds or when 1 MB is accumulated
+    batchwait:  2s
+    batchsize:  1048576   # 1 MB
+    backoff_config:
+      min_period:  500ms
+      max_period:  5m
+      max_retries: 10
+
+# ─── Positions file (keeps track of how far we've read each file) ─────────────
+positions:
+  filename: /tmp/positions.yaml
+
+# ─── Scrape configs ───────────────────────────────────────────────────────────
+scrape_configs:
+
+  # ── Docker container logs via the Docker daemon socket ──────────────────
+  - job_name: docker-containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          # Only collect logs from containers on the techmo network
+          - name:  network
+            values: ['pos_techmo-net']
+    relabel_configs:
+      # Use the container name as the "container" label
+      - source_labels: ['__meta_docker_container_name']
+        regex:         '/?(.*)'
+        target_label:  container
+      # Derive the service name from the container name (strip techmo- prefix)
+      - source_labels: ['container']
+        regex:         'techmo-(.*)'
+        replacement:   '$1'
+        target_label:  service
+      # Keep Docker image name as a label
+      - source_labels: ['__meta_docker_container_image']
+        target_label:  image
+      # Keep the log stream (stdout / stderr)
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label:  stream
+    pipeline_stages:
+      # ── JSON log parsing (NestJS / FastAPI structured logs) ───────────
+      - json:
+          expressions:
+            level:   level
+            message: message
+            context: context
+            pid:     pid
+      # ── Map log level to standard label ───────────────────────────────
+      - labels:
+          level:
+          context:
+      # ── Drop noisy health-check lines ─────────────────────────────────
+      - drop:
+          expression: '(GET /health|GET /actuator/health|GET /metrics)'
+          drop_counter_reason: health_check_noise
+      # ── Timestamp from parsed JSON (NestJS default format) ────────────
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+          fallback_formats:
+            - RFC3339
+            - UnixMs
+
+  # ── Auth Service (Spring Boot – plain-text log fallback) ────────────────
+  - job_name: auth-service-file
+    static_configs:
+      - targets: ['localhost']
+        labels:
+          service: auth-service
+          __path__: /var/log/techmo/auth-service/*.log
+    pipeline_stages:
+      # Spring Boot default log pattern: timestamp level --- [thread] class : message
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)\s+(?P<level>\w+)\s'
+      - labels:
+          level:
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+
+  # ── Nginx / Caddy access logs (if used as reverse proxy locally) ─────────
+  - job_name: nginx
+    static_configs:
+      - targets: ['localhost']
+        labels:
+          service: nginx
+          __path__: /var/log/nginx/access.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<remote_addr>\S+) - \S+ \[(?P<time_local>[^\]]+)\] "(?P<request>[^"]*)" (?P<status>\d+) (?P<body_bytes_sent>\d+)'
+      - labels:
+          status:

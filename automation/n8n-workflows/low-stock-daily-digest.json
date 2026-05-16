@@ -1,0 +1,59 @@
+{
+  "name": "Low-Stock Daily Digest (08:00)",
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }] }
+      }
+    },
+    {
+      "id": "fetch_low_stock",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/inventory/low-stock",
+        "headerParameters": {
+          "parameters": [{ "name": "x-n8n-secret", "value": "={{ $env.N8N_SECRET }}" }]
+        }
+      }
+    },
+    {
+      "id": "has_items",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "number": [{ "value1": "={{ $json.length }}", "operation": "larger", "value2": 0 }]
+        }
+      }
+    },
+    {
+      "id": "format_message",
+      "type": "n8n-nodes-base.set",
+      "parameters": {
+        "values": {
+          "string": [{
+            "name": "message",
+            "value": "📦 *Low Stock Daily Digest*\n\n{{ $json.map(i => `• ${i.name} — ${i.stockQty} left (min: ${i.minStockLevel})`).join('\\n') }}"
+          }]
+        }
+      }
+    },
+    {
+      "id": "telegram_alert",
+      "type": "n8n-nodes-base.telegram",
+      "parameters": {
+        "chatId":     "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text":       "={{ $json.message }}",
+        "parse_mode": "Markdown"
+      }
+    }
+  ],
+  "connections": {
+    "trigger":        { "main": [["fetch_low_stock"]] },
+    "fetch_low_stock":{ "main": [["has_items"]] },
+    "has_items":      { "main": [["format_message"], []] },
+    "format_message": { "main": [["telegram_alert"]] }
+  }
+}

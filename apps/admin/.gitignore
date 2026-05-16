@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+.pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Testing
+.next/out/
+coverage/
+
+# Production
+dist/
+build/
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~

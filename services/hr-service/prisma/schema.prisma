@@ -1,0 +1,85 @@
+// TechMo HR Service – Prisma Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Employee {
+  id           String         @id @default(uuid())
+  userId       String?        @unique  // linked auth user
+  employeeCode String         @unique
+  firstName    String
+  lastName     String
+  email        String         @unique
+  phone        String
+  position     String
+  department   String?
+  baseSalary   Decimal        @db.Decimal(12, 2)
+  commissionPct Decimal       @default(0) @db.Decimal(5, 2)
+  allowance    Decimal        @default(0) @db.Decimal(12, 2)
+  hireDate     DateTime
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  attendance   Attendance[]
+  shifts       Shift[]
+  payrolls     Payroll[]
+
+  @@map("employees")
+}
+
+model Attendance {
+  id          String     @id @default(uuid())
+  employeeId  String
+  employee    Employee   @relation(fields: [employeeId], references: [id])
+  clockIn     DateTime
+  clockOut    DateTime?
+  hoursWorked Decimal?   @db.Decimal(5, 2)
+  notes       String?
+  createdAt   DateTime   @default(now())
+
+  @@map("attendance")
+}
+
+model Shift {
+  id          String     @id @default(uuid())
+  employeeId  String
+  employee    Employee   @relation(fields: [employeeId], references: [id])
+  shiftStart  DateTime
+  shiftEnd    DateTime
+  label       String?    // e.g. "Morning", "Evening"
+  createdAt   DateTime   @default(now())
+
+  @@map("shifts")
+}
+
+model Payroll {
+  id              String     @id @default(uuid())
+  employeeId      String
+  employee        Employee   @relation(fields: [employeeId], references: [id])
+  month           Int
+  year            Int
+  baseSalary      Decimal    @db.Decimal(12, 2)
+  allowance       Decimal    @default(0) @db.Decimal(12, 2)
+  commissionEarned Decimal   @default(0) @db.Decimal(12, 2)
+  totalSalesAmt   Decimal    @default(0) @db.Decimal(12, 2)
+  deductions      Decimal    @default(0) @db.Decimal(12, 2)
+  netPay          Decimal    @db.Decimal(12, 2)
+  status          PayrollStatus @default(DRAFT)
+  processedBy     String?
+  processedAt     DateTime?
+  createdAt       DateTime   @default(now())
+
+  @@unique([employeeId, month, year])
+  @@map("payroll")
+}
+
+enum PayrollStatus {
+  DRAFT
+  APPROVED
+  PAID
+}

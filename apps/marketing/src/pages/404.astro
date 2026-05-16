@@ -1,0 +1,62 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+---
+<Layout
+  title="Page Not Found — TechMo Electronics"
+  description="The page you're looking for doesn't exist. Return to TechMo's homepage."
+>
+  <Navbar />
+
+  <main class="min-h-[70vh] flex items-center justify-center px-4 py-20">
+    <div class="text-center max-w-lg">
+      <!-- Animated 404 -->
+      <div class="relative inline-block mb-8" aria-hidden="true">
+        <div class="text-[9rem] font-black text-transparent bg-clip-text bg-gradient-to-br from-[#1e40af] to-[#6366f1] leading-none select-none">
+          404
+        </div>
+        <div class="absolute inset-0 text-[9rem] font-black text-[#1e40af]/5 leading-none select-none blur-sm">
+          404
+        </div>
+      </div>
+
+      <div class="text-5xl mb-5">🔍</div>
+
+      <h1 class="text-2xl font-bold text-[#0f172a] mb-3">Page Not Found</h1>
+      <p class="text-[#64748b] leading-relaxed mb-8">
+        The page you're looking for doesn't exist or has been moved.
+        Let's get you back on track.
+      </p>
+
+      <!-- Suggestions -->
+      <div class="grid grid-cols-2 gap-3 mb-8 text-sm">
+        {[
+          { href: '/', icon: '🏠', label: 'Homepage' },
+          { href: '/products', icon: '📱', label: 'Products' },
+          { href: '/repair-status', icon: '🔧', label: 'Track Repair' },
+          { href: '/contact', icon: '📞', label: 'Contact Us' },
+        ].map(l => (
+          <a href={l.href} class="quick-link">
+            <span>{l.icon}</span>
+            {l.label}
+          </a>
+        ))}
+      </div>
+
+      <a href="/" class="inline-flex items-center gap-2 bg-[#1e40af] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#1e3a8a] transition-colors duration-150">
+        ← Back to Home
+      </a>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .quick-link {
+    @apply flex items-center gap-2 px-4 py-3 rounded-xl bg-[#f8fafc] border border-gray-100
+           text-[#334155] font-medium hover:bg-[#eff6ff] hover:border-[#1e40af]/20
+           hover:text-[#1e40af] transition-all duration-150;
+  }
+</style>

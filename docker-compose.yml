@@ -1,0 +1,532 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TechMo Enterprise Retail & Service Management System
+# Docker Compose – Local-First Deployment
+# ─────────────────────────────────────────────────────────────────────────────
+
+networks:
+  techmo-net:
+    driver: bridge
+
+volumes:
+  pg_data:          # single shared Postgres volume (replaces 7 separate volumes)
+  redis_data:
+  n8n_data:
+  prometheus_data:
+  loki_data:
+  grafana_data:
+  phi3_data:        # persists Llama-3.2-1B GGUF model across rebuilds (~770 MB)
+
+services:
+  # ─── DATABASE (single Postgres instance, multiple logical databases) ──────────
+  # init-databases.sh creates techmo_product, _inventory, _order, _repair,
+  # _loyalty, _hr automatically on first boot.
+  postgres:
+    image: postgres:16-alpine
+    container_name: techmo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: techmo_auth        # default DB; others created by init script
+      POSTGRES_USER: ${DB_USER:-techmo}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-techmo_secret}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    ports:
+      - "5433:5432"
+    networks:
+      - techmo-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-techmo} -d techmo_auth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── REDIS ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: techmo-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_secret}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - techmo-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_secret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── AUTH SERVICE (Spring Boot) ──────────────────────────────────────────────
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-auth
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/techmo_auth
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-techmo}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-techmo_secret}
+      JWT_SECRET: ${JWT_SECRET:-your_very_long_rsa_secret_here_change_in_production}
+      JWT_EXPIRY_MS: ${JWT_EXPIRY_MS:-900000}
+      JWT_REFRESH_EXPIRY_MS: ${JWT_REFRESH_EXPIRY_MS:-604800000}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_secret}
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - techmo-net
+
+  # ─── PRODUCT SERVICE (NestJS) ────────────────────────────────────────────────
+  product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-product
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-techmo}:${DB_PASSWORD:-techmo_secret}@postgres:5432/techmo_product
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379
+      PORT: 3001
+      NODE_ENV: ${NODE_ENV:-production}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - techmo-net
+
+  # ─── INVENTORY SERVICE (NestJS) ──────────────────────────────────────────────
+  inventory-service:
+    build:
+      context: ./services/inventory-service
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-inventory
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-techmo}:${DB_PASSWORD:-techmo_secret}@postgres:5432/techmo_inventory
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379
+      PORT: 3002
+      NODE_ENV: ${NODE_ENV:-production}
+      WORKER_SERVICE_URL: http://worker-service:8000
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      ALERT_EMAIL: ${ALERT_EMAIL:-admin@techmo.lk}   # NodeMailer low-stock alert destination
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - techmo-net
+
+  # ─── ORDER / POS SERVICE (NestJS) ────────────────────────────────────────────
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-order
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-techmo}:${DB_PASSWORD:-techmo_secret}@postgres:5432/techmo_order
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379
+      PORT: 3003
+      NODE_ENV: ${NODE_ENV:-production}
+      INVENTORY_SERVICE_URL: http://inventory-service:3002
+      PRODUCT_SERVICE_URL: http://product-service:3001
+      LOYALTY_SERVICE_URL: http://loyalty-service:3005
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-techmo-internal-svc-2026}
+      WORKER_SERVICE_URL: http://worker-service:8000      # NodeMailer – invoice email delivery
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@techmo.lk}
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - techmo-net
+
+  # ─── REPAIR SERVICE (NestJS) ─────────────────────────────────────────────────
+  repair-service:
+    build:
+      context: ./services/repair-service
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-repair
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-techmo}:${DB_PASSWORD:-techmo_secret}@postgres:5432/techmo_repair
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379
+      PORT: 3004
+      NODE_ENV: ${NODE_ENV:-production}
+      WORKER_SERVICE_URL: http://worker-service:8000
+      INVENTORY_SERVICE_URL: http://inventory-service:3002
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@techmo.lk}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+    ports:
+      - "3004:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - techmo-net
+
+  # ─── LOYALTY / CRM SERVICE (NestJS) ──────────────────────────────────────────
+  loyalty-service:
+    build:
+      context: ./services/loyalty-service
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-loyalty
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-techmo}:${DB_PASSWORD:-techmo_secret}@postgres:5432/techmo_loyalty
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379
+      PORT: 3005
+      NODE_ENV: ${NODE_ENV:-production}
+      JWT_SECRET: ${JWT_SECRET:-your_very_long_rsa_secret_here_change_in_production}
+      CUSTOMER_JWT_SECRET: ${CUSTOMER_JWT_SECRET:-${JWT_SECRET:-your_very_long_rsa_secret_here_change_in_production}}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@techmo.lk}
+      CUSTOMER_APP_URL: ${CUSTOMER_APP_URL:-http://localhost:4002}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-techmo-internal-svc-2026}
+    ports:
+      - "3005:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - techmo-net
+
+  # ─── HR SERVICE (NestJS) ─────────────────────────────────────────────────────
+  hr-service:
+    build:
+      context: ./services/hr-service
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-hr
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-techmo}:${DB_PASSWORD:-techmo_secret}@postgres:5432/techmo_hr
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379
+      PORT: 3006
+      NODE_ENV: ${NODE_ENV:-production}
+    ports:
+      - "3006:3006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - techmo-net
+
+  # ─── WORKER SERVICE (Python FastAPI) ─────────────────────────────────────────
+  worker-service:
+    build:
+      context: ./services/worker-service
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-worker
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      CLOUDINARY_UPLOAD_PRESET: ${CLOUDINARY_UPLOAD_PRESET:-techmo_uploads}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-techmo_electronics_bot}
+      STORE_WHATSAPP: ${STORE_WHATSAPP:-94704124816}
+      PORT: 8000
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@techmo.lk}
+      ALERT_EMAIL: ${ALERT_EMAIL:-admin@techmo.lk}
+      # ── Llama-3.2-1B-Instruct AI (1B params, ~770 MB, ~15-25s on CPU) ────────
+      PHI3_MODEL_PATH: /app/models/llama-3.2-1b.gguf
+      PHI3_MODEL_REPO: bartowski/Llama-3.2-1B-Instruct-GGUF
+      PHI3_MODEL_FILE: Llama-3.2-1B-Instruct-Q4_K_M.gguf
+      PHI3_N_CTX: ${PHI3_N_CTX:-2048}
+      PHI3_N_THREADS: ${PHI3_N_THREADS:-4}
+      PHI3_N_GPU_LAYERS: ${PHI3_N_GPU_LAYERS:-0}
+    volumes:
+      - phi3_data:/app/models    # ← persists the ~770 MB GGUF model file
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - techmo-net
+
+  # ─── API GATEWAY (NestJS) ────────────────────────────────────────────────────
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-gateway
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-production}
+      JWT_SECRET: ${JWT_SECRET:-your_very_long_rsa_secret_here_change_in_production}
+      # Must match CUSTOMER_JWT_SECRET in loyalty-service so the gateway proxy can
+      # verify customer access tokens and safely set X-Customer-Id.
+      CUSTOMER_JWT_SECRET: ${CUSTOMER_JWT_SECRET:-${JWT_SECRET:-your_very_long_rsa_secret_here_change_in_production}}
+      AUTH_SERVICE_URL: http://auth-service:8081
+      PRODUCT_SERVICE_URL: http://product-service:3001
+      INVENTORY_SERVICE_URL: http://inventory-service:3002
+      ORDER_SERVICE_URL: http://order-service:3003
+      REPAIR_SERVICE_URL: http://repair-service:3004
+      LOYALTY_SERVICE_URL: http://loyalty-service:3005
+      HR_SERVICE_URL: http://hr-service:3006
+      WORKER_SERVICE_URL: http://worker-service:8000
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@techmo.lk}
+      ALERT_EMAIL: ${ALERT_EMAIL:-admin@techmo.lk}
+      CF_TURNSTILE_SECRET_KEY: ${CF_TURNSTILE_SECRET_KEY}
+      CORS_ORIGINS: http://localhost:4000,http://localhost:4001,http://localhost:4002
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - product-service
+      - inventory-service
+      - order-service
+      - repair-service
+      - loyalty-service
+      - hr-service
+      - worker-service
+    networks:
+      - techmo-net
+
+  # ─── MARKETING SITE (Astro) ──────────────────────────────────────────────────
+  marketing:
+    build:
+      context: ./apps/marketing
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-marketing
+    restart: unless-stopped
+    environment:
+      PUBLIC_GATEWAY_URL: ${PUBLIC_GATEWAY_URL:-http://localhost:3000}
+    ports:
+      - "4000:4000"
+    networks:
+      - techmo-net
+
+  # ─── ADMIN / POS DASHBOARD (Next.js) ─────────────────────────────────────────
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-admin
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_GATEWAY_URL: ${PUBLIC_GATEWAY_URL:-http://localhost:3000}
+    ports:
+      - "4001:4001"
+    networks:
+      - techmo-net
+
+  # ─── CUSTOMER PORTAL (Next.js) ───────────────────────────────────────────────
+  customer:
+    build:
+      context: ./apps/customer
+      dockerfile: Dockerfile
+      network: host
+    container_name: techmo-customer
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_GATEWAY_URL: ${PUBLIC_GATEWAY_URL:-http://localhost:3000}
+      NEXT_PUBLIC_APP_URL: ${CUSTOMER_APP_URL:-https://my.techmo.lk}
+    ports:
+      - "4002:4002"
+    networks:
+      - techmo-net
+
+  # ─── CLOUDFLARE TUNNEL (secure public HTTPS access) ──────────────────────────
+  # Exposes: gateway (api.techmo.lk) without opening firewall ports.
+  # Marketing site is deployed separately to Cloudflare Pages.
+  # Get token from: https://one.dash.cloudflare.com → Zero Trust → Tunnels
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: techmo-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
+    depends_on:
+      - gateway
+    networks:
+      - techmo-net
+    profiles:
+      - production   # only starts when: docker compose --profile production up
+
+  # ─── OBSERVABILITY ────────────────────────────────────────────────────────────
+
+  # n8n – workflow automation (Telegram alerts, WhatsApp digests, PDF reports)
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: techmo-n8n
+    restart: unless-stopped
+    environment:
+      # n8n core
+      N8N_HOST: 0.0.0.0
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678
+      # Persist workflows & credentials
+      DB_TYPE: sqlite
+      N8N_USER_MANAGEMENT_DISABLED: "false"
+      # Timezone (important for cron schedules)
+      GENERIC_TIMEZONE: Asia/Colombo
+      TZ: Asia/Colombo
+      # Allow workflows to read container env vars via $env.* (free plan compatible)
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # ── Variables used by all workflows ─────────────────────────────────────
+      GATEWAY_URL: http://gateway:3000
+      N8N_SECRET: ${N8N_SECRET:-techmo_n8n_secret_2024}
+      N8N_INTERNAL_API_TOKEN: ${N8N_INTERNAL_API_TOKEN}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-1813081669}
+      MANAGER_TELEGRAM_CHAT_ID: ${MANAGER_TELEGRAM_CHAT_ID:-1813081669}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./automation/n8n-workflows:/home/node/workflows:ro
+    ports:
+      - "5678:5678"
+    depends_on:
+      - gateway
+    networks:
+      - techmo-net
+
+  # ─── OBSERVABILITY ────────────────────────────────────────────────────────────
+
+  # Prometheus – metrics collection
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: techmo-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - techmo-net
+    profiles:
+      - observability
+
+  # Grafana Loki – log aggregation
+  loki:
+    image: grafana/loki:2.9.6
+    container_name: techmo-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./infra/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - techmo-net
+    profiles:
+      - observability
+
+  # Promtail – log shipper (reads Docker container logs)
+  promtail:
+    image: grafana/promtail:2.9.6
+    container_name: techmo-promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail.yml
+    volumes:
+      - ./infra/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/log:/var/log:ro
+    depends_on:
+      - loki
+    networks:
+      - techmo-net
+    profiles:
+      - observability
+
+  # Grafana – dashboard UI for Prometheus + Loki
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: techmo-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER:     ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_SERVER_ROOT_URL:         ${GRAFANA_ROOT_URL:-http://localhost:3200}
+      GF_INSTALL_PLUGINS:         grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3200:3000"
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - techmo-net
+    profiles:
+      - observability
+

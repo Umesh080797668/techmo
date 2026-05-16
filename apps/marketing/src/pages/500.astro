@@ -1,0 +1,55 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+---
+<Layout
+  title="Server Error — TechMo Electronics"
+  description="Something went wrong on our end. Please try again shortly."
+>
+  <Navbar />
+
+  <main class="min-h-[70vh] flex items-center justify-center px-4 py-20">
+    <div class="text-center max-w-lg">
+      <div class="relative inline-block mb-8" aria-hidden="true">
+        <div class="text-[9rem] font-black text-transparent bg-clip-text bg-gradient-to-br from-red-500 to-red-700 leading-none select-none">
+          500
+        </div>
+      </div>
+
+      <div class="text-5xl mb-5">⚠️</div>
+
+      <h1 class="text-2xl font-bold text-[#0f172a] mb-3">Server Error</h1>
+      <p class="text-[#64748b] leading-relaxed mb-8">
+        Something went wrong on our end. Our team has been notified.
+        Please try again in a few moments.
+      </p>
+
+      <div class="bg-red-50 border border-red-100 rounded-xl p-4 mb-8 text-sm text-red-700 text-left">
+        <strong>What you can do:</strong>
+        <ul class="mt-2 space-y-1 list-disc pl-4">
+          <li>Refresh the page and try again</li>
+          <li>Clear your browser cache</li>
+          <li>Come back in a few minutes</li>
+          <li>Contact us if the problem persists</li>
+        </ul>
+      </div>
+
+      <div class="flex flex-wrap gap-3 justify-center">
+        <button onclick="window.location.reload()" class="inline-flex items-center gap-2 bg-[#1e40af] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#1e3a8a] transition-colors cursor-pointer border-0">
+          🔄 Refresh Page
+        </button>
+        <a href="/" class="inline-flex items-center gap-2 border border-gray-200 bg-white text-[#334155] px-6 py-3 rounded-xl font-semibold hover:bg-[#f8fafc] transition-colors">
+          ← Back to Home
+        </a>
+      </div>
+
+      <p class="mt-8 text-sm text-[#64748b]">
+        Need help? <a href="/contact" class="text-[#1e40af] hover:underline font-medium">Contact our support team</a>
+        or call <a href="tel:+94112345678" class="text-[#1e40af] hover:underline font-medium">+94 11 234 5678</a>.
+      </p>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

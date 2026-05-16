@@ -1,0 +1,35 @@
+{
+  "name": "GlitchTip Fatal Error → Telegram Alert",
+  "nodes": [
+    {
+      "id": "webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "glitchtip-alert",
+        "httpMethod": "POST"
+      }
+    },
+    {
+      "id": "filter_fatal",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "string": [{ "value1": "={{ $json.level }}", "operation": "equal", "value2": "fatal" }]
+        }
+      }
+    },
+    {
+      "id": "telegram_alert",
+      "type": "n8n-nodes-base.telegram",
+      "parameters": {
+        "chatId":     "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text":       "🚨 *Fatal Error — TechMo*\n\nService: `{{ $json.project }}`\nError: `{{ $json.title }}`\nMessage: {{ $json.culprit }}\nTime: {{ $now.toFormat('dd MMM HH:mm') }}\n\n[View on GlitchTip]({{ $env.GLITCHTIP_URL }}/{{ $json.project_slug }}/issues/{{ $json.id }})",
+        "parse_mode": "Markdown"
+      }
+    }
+  ],
+  "connections": {
+    "webhook":      { "main": [["filter_fatal"]] },
+    "filter_fatal": { "main": [["telegram_alert"], []] }
+  }
+}

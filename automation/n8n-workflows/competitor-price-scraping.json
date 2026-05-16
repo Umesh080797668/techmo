@@ -1,0 +1,197 @@
+{
+  "name": "Competitor Price Scraping (Weekly)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Every Monday 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://browserless:3000/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"{{ $json.competitorUrl }}\",\n  \"elements\": [\n    {\n      \"selector\": \".price, [data-price], .product-price, .woocommerce-Price-amount\",\n      \"timeout\": 8000\n    },\n    {\n      \"selector\": \".product-title, h1.title, .product-name\",\n      \"timeout\": 5000\n    }\n  ],\n  \"waitFor\": 2000\n}",
+        "options": {}
+      },
+      "id": "browserless-scrape",
+      "name": "Scrape Competitor Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse scraped elements into structured price data\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const scraped = item.json;\n  const prices = scraped?.data?.[0]?.results || [];\n  const titles = scraped?.data?.[1]?.results || [];\n\n  for (let i = 0; i < Math.min(prices.length, titles.length); i++) {\n    const rawPrice = prices[i]?.text?.replace(/[^0-9.]/g, '') || '0';\n    const price = parseFloat(rawPrice);\n    const name  = titles[i]?.text?.trim() || 'Unknown Product';\n\n    if (price > 0) {\n      results.push({\n        productName: name,\n        competitorPrice: price,\n        competitorUrl: item.json.url || '',\n        scrapedAt: new Date().toISOString(),\n      });\n    }\n  }\n}\n\nreturn results.map(r => ({ json: r }));"
+      },
+      "id": "parse-prices",
+      "name": "Parse Price Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://gateway:3001/api/v1/pricing/compare",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.N8N_INTERNAL_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($input.all().map(i => i.json)) }}",
+        "options": {}
+      },
+      "id": "compare-prices",
+      "name": "Compare Against Our Prices",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter for significant price gaps (> 10% cheaper at competitor)\nconst comparisons = $input.all();\nconst flags = [];\n\nfor (const item of comparisons) {\n  const d = item.json;\n  if (!d.ourPrice || !d.competitorPrice) continue;\n\n  const diff = ((d.ourPrice - d.competitorPrice) / d.ourPrice) * 100;\n\n  if (diff > 10) {\n    flags.push({\n      product: d.productName,\n      ourPrice: d.ourPrice,\n      competitorPrice: d.competitorPrice,\n      diffPct: diff.toFixed(1),\n      competitorUrl: d.competitorUrl,\n      status: 'TOO_EXPENSIVE',\n    });\n  } else if (diff < -15) {\n    flags.push({\n      product: d.productName,\n      ourPrice: d.ourPrice,\n      competitorPrice: d.competitorPrice,\n      diffPct: diff.toFixed(1),\n      competitorUrl: d.competitorUrl,\n      status: 'UNDERPRICED',\n    });\n  }\n}\n\n// Pass total count so next node can decide whether to send alert\nreturn [{ json: { flags, count: flags.length } }];"
+      },
+      "id": "flag-discrepancies",
+      "name": "Flag Price Discrepancies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-flags",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-has-flags",
+      "name": "Has Price Flags?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@techmo.lk",
+        "toEmail": "={{ $env.MANAGER_EMAIL }}",
+        "subject": "=⚠️ Weekly Competitor Price Alert — {{ $json.count }} discrepancies found",
+        "emailType": "html",
+        "html": "=<h2>TechMo Weekly Competitor Price Report</h2>\n<p>Generated: {{ new Date().toLocaleDateString('en-GB') }}</p>\n\n<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse:collapse;font-family:sans-serif;font-size:13px;\">\n  <thead style=\"background:#f3f4f6;\">\n    <tr>\n      <th>Product</th>\n      <th>Our Price (LKR)</th>\n      <th>Competitor (LKR)</th>\n      <th>Difference</th>\n      <th>Status</th>\n    </tr>\n  </thead>\n  <tbody>\n    {{ $json.flags.map(f => `<tr>\n      <td>${f.product}</td>\n      <td>${f.ourPrice.toLocaleString()}</td>\n      <td>${f.competitorPrice.toLocaleString()}</td>\n      <td>${f.diffPct}%</td>\n      <td style=\"color:${f.status === 'TOO_EXPENSIVE' ? '#dc2626' : '#2563eb'}\">${f.status}</td>\n    </tr>`).join('') }}\n  </tbody>\n</table>\n\n<p style=\"margin-top:16px;\">Review pricing rules at <a href=\"http://admin.techmo.lk/pricing\">Admin → Pricing</a></p>",
+        "options": {}
+      },
+      "id": "send-email-alert",
+      "name": "Send Manager Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1780, 220]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.MANAGER_TELEGRAM_CHAT_ID }}",
+        "text": "=📊 <b>Weekly Competitor Price Report</b>\n\n⚠️ <b>{{ $json.count }} price discrepancies</b> detected this week.\n\nTop flag: <b>{{ $json.flags[0]?.product }}</b> — competitor {{ $json.flags[0]?.competitorPrice?.toLocaleString() }} vs ours {{ $json.flags[0]?.ourPrice?.toLocaleString() }} LKR ({{ $json.flags[0]?.diffPct }}%)\n\n🔗 Review at Admin → Pricing",
+        "additionalFields": {
+          "parseMode": "HTML"
+        }
+      },
+      "id": "telegram-alert",
+      "name": "Telegram Manager Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1780, 380],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-creds",
+          "name": "TechMo Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every Monday 07:00": {
+      "main": [
+        [{ "node": "Scrape Competitor Page", "type": "main", "index": 0 }]
+      ]
+    },
+    "Scrape Competitor Page": {
+      "main": [
+        [{ "node": "Parse Price Data", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Price Data": {
+      "main": [
+        [{ "node": "Compare Against Our Prices", "type": "main", "index": 0 }]
+      ]
+    },
+    "Compare Against Our Prices": {
+      "main": [
+        [{ "node": "Flag Price Discrepancies", "type": "main", "index": 0 }]
+      ]
+    },
+    "Flag Price Discrepancies": {
+      "main": [
+        [{ "node": "Has Price Flags?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Has Price Flags?": {
+      "main": [
+        [
+          { "node": "Send Manager Email Alert", "type": "main", "index": 0 },
+          { "node": "Telegram Manager Alert",   "type": "main", "index": 0 }
+        ],
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "description": "Scrapes competitor product pages weekly via Browserless (free tier), compares prices against TechMo's dynamic pricing, and alerts the manager via email + Telegram if discrepancies exceed 10%.",
+    "tags": ["pricing", "automation", "competitor-intelligence"]
+  }
+}

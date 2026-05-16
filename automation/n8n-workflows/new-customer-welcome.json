@@ -1,0 +1,35 @@
+{
+  "name": "New Customer Welcome Message",
+  "nodes": [
+    {
+      "id": "webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "customer-registered",
+        "httpMethod": "POST"
+      }
+    },
+    {
+      "id": "wait_10min",
+      "type": "n8n-nodes-base.wait",
+      "parameters": { "amount": 10, "unit": "minutes" }
+    },
+    {
+      "id": "send_whatsapp",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/notifications/whatsapp-link",
+        "jsonBody": {
+          "phone":    "={{ $json.phone }}",
+          "template": "WELCOME",
+          "context":  { "name": "={{ $json.name }}" }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "webhook":    { "main": [["wait_10min"]] },
+    "wait_10min": { "main": [["send_whatsapp"]] }
+  }
+}

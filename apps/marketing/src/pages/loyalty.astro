@@ -1,0 +1,224 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+
+const tiers = [
+  {
+    name: 'Standard',
+    icon: '⭐',
+    color: 'bg-slate-50 border-slate-200',
+    badge: 'bg-slate-100 text-slate-700',
+    minPoints: 0,
+    earn: '1 point per LKR 100',
+    benefits: [
+      'Earn points on every purchase',
+      'Earn points on repair services',
+      'Access to member-only offers',
+      'Birthday bonus points',
+      'Free repair diagnostics',
+    ],
+  },
+  {
+    name: 'Premium',
+    icon: '👑',
+    color: 'bg-amber-50 border-amber-200',
+    badge: 'bg-amber-100 text-amber-700',
+    minPoints: 5000,
+    earn: '1.5× points on every purchase',
+    benefits: [
+      'All Standard benefits',
+      '50% more points on purchases',
+      'Priority repair queue',
+      'Extended warranty (extra 30 days)',
+      'Exclusive member discounts up to 10%',
+      'Dedicated WhatsApp support',
+      'Annual bonus points (500 pts)',
+    ],
+    highlight: true,
+  },
+];
+
+const howItWorks = [
+  { icon: '🛒', title: 'Shop & Earn', desc: 'Earn 1 loyalty point for every LKR 100 spent on products. Premium members earn 1.5×.' },
+  { icon: '🔧', title: 'Repairs Earn Too', desc: 'Every repair service earns you points — adding up fast when you maintain your devices at TechMo.' },
+  { icon: '🎁', title: 'Redeem for Discounts', desc: '100 points = LKR 100 discount. Apply points at checkout to reduce your bill instantly.' },
+  { icon: '📈', title: 'Level Up to Premium', desc: 'Accumulate 5,000 points and you\'re automatically upgraded to Premium tier with exclusive benefits.' },
+];
+
+const faqs = [
+  { q: 'Do loyalty points expire?', a: 'Points expire after 24 months of account inactivity. Make at least one transaction every 2 years to keep your balance.' },
+  { q: 'Can I redeem points on repairs?', a: 'Yes! Points can be redeemed on both product purchases and repair services at any TechMo branch.' },
+  { q: 'How do I join the loyalty programme?', a: 'Simply provide your name and phone number when making any purchase at TechMo — your account is created automatically at no cost.' },
+  { q: 'Can I combine points with other offers?', a: 'Points can be combined with standard promotions but not with other active discount codes unless stated.' },
+  { q: 'What happens to my tier if I don\'t reach 5,000 points?', a: 'You\'ll remain on the Standard tier and continue earning points. There\'s no downgrade — once you hit Premium, you keep the status for the calendar year.' },
+  { q: 'Can I transfer points to someone else?', a: 'Points are non-transferable and tied to your registered phone number.' },
+];
+---
+<Layout
+  title="Loyalty Rewards Programme — TechMo Electronics"
+  description="Join TechMo's Loyalty Rewards Programme. Earn points on every purchase and repair, redeem for discounts, and unlock Premium tier benefits."
+  canonical="/loyalty"
+>
+  <Navbar />
+
+  <!-- Hero -->
+  <section class="hero-section text-white py-20 px-4 text-center">
+    <div class="max-w-3xl mx-auto">
+      <div class="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm font-medium mb-5">
+        <span class="text-[#f59e0b]">👑</span>
+        Free to Join · No Annual Fee
+      </div>
+      <h1 class="text-4xl md:text-5xl font-extrabold mb-4 leading-tight">
+        Shop Smarter,<br/>
+        <span class="text-[#f59e0b]">Earn Every Time</span>
+      </h1>
+      <p class="text-blue-200 text-lg max-w-xl mx-auto mb-8">
+        TechMo's Loyalty Rewards Programme turns every purchase and repair into points
+        you can redeem for real savings — with no fees and no complexity.
+      </p>
+      <div class="flex flex-wrap gap-4 justify-center">
+        <a href="/contact" class="bg-[#f59e0b] text-[#0f172a] px-7 py-3 rounded-xl font-bold hover:bg-[#d97706] transition-colors">
+          Join at Store Today
+        </a>
+        <a href="/portal" class="border-2 border-white/50 text-white px-7 py-3 rounded-xl font-semibold hover:bg-white/10 transition-colors">
+          Check My Points →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it Works -->
+  <section class="py-16 px-4 bg-white">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-10">
+        <h2 class="text-3xl font-bold text-[#0f172a] mb-3">How It Works</h2>
+        <p class="text-[#64748b]">Simple, transparent, and genuinely rewarding.</p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {howItWorks.map((step) => (
+          <div class="text-center group">
+            <div class="w-16 h-16 rounded-2xl bg-[#eff6ff] flex items-center justify-center text-3xl mx-auto mb-4 group-hover:bg-[#1e40af] transition-colors duration-200">
+              {step.icon}
+            </div>
+            <h3 class="font-bold text-[#0f172a] mb-2">{step.title}</h3>
+            <p class="text-sm text-[#64748b] leading-relaxed">{step.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Tiers -->
+  <section class="py-16 px-4 bg-[#f8fafc]">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-10">
+        <h2 class="text-3xl font-bold text-[#0f172a] mb-3">Membership Tiers</h2>
+        <p class="text-[#64748b]">Start Standard, unlock Premium as your points grow.</p>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6">
+        {tiers.map(tier => (
+          <div class={`rounded-2xl border-2 p-8 ${tier.color} ${tier.highlight ? 'ring-2 ring-[#f59e0b] shadow-lg' : ''} relative`}>
+            {tier.highlight && (
+              <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#f59e0b] text-[#0f172a] text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                Best Value
+              </div>
+            )}
+            <div class="flex items-center gap-3 mb-4">
+              <span class="text-4xl">{tier.icon}</span>
+              <div>
+                <div class={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${tier.badge}`}>
+                  {tier.name}
+                </div>
+                <p class="text-xs text-[#64748b] mt-1">From {tier.minPoints.toLocaleString()} points</p>
+              </div>
+            </div>
+            <div class="bg-white/60 rounded-xl px-4 py-2.5 mb-4 text-sm font-semibold text-[#1e40af]">
+              {tier.earn}
+            </div>
+            <ul class="space-y-2">
+              {tier.benefits.map(b => (
+                <li class="flex items-start gap-2 text-sm text-[#334155]">
+                  <span class="text-green-500 mt-0.5 flex-shrink-0">✓</span>
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Points Value -->
+  <section class="py-14 px-4 bg-white">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-2xl font-bold text-[#0f172a] mb-8">Points Are Real Money</h2>
+      <div class="grid sm:grid-cols-3 gap-4">
+        {[
+          { points: '500 pts', value: 'LKR 500', eg: '≈ A tempered glass' },
+          { points: '1,000 pts', value: 'LKR 1,000', eg: '≈ A phone case or accessory' },
+          { points: '5,000 pts', value: 'LKR 5,000', eg: '≈ A screen replacement' },
+        ].map(r => (
+          <div class="bg-[#f8fafc] rounded-2xl border border-gray-100 p-6">
+            <div class="text-2xl font-extrabold text-[#1e40af] mb-1">{r.value}</div>
+            <div class="text-sm text-[#64748b] mb-3">{r.points}</div>
+            <div class="text-xs text-[#94a3b8] italic">{r.eg}</div>
+          </div>
+        ))}
+      </div>
+      <p class="text-xs text-[#94a3b8] mt-6">100 points = LKR 100 discount. Points applied at time of purchase or repair billing.</p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="py-14 px-4 bg-[#f8fafc]">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl font-bold text-[#0f172a] text-center mb-8">Loyalty Programme FAQs</h2>
+      <div class="space-y-4">
+        {faqs.map(faq => (
+          <details class="faq-item group">
+            <summary class="faq-question">
+              {faq.q}
+              <span class="ml-auto text-[#1e40af] group-open:rotate-180 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="faq-answer">{faq.a}</div>
+          </details>
+        ))}
+      </div>
+      <p class="text-center mt-8 text-sm text-[#64748b]">
+        More questions? See our full <a href="/faq" class="text-[#1e40af] hover:underline font-medium">FAQ page</a> or <a href="/contact" class="text-[#1e40af] hover:underline font-medium">contact us</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-14 px-4 bg-[#0f172a] text-white text-center">
+    <div class="max-w-2xl mx-auto">
+      <div class="text-5xl mb-4">🎁</div>
+      <h2 class="text-3xl font-bold mb-3">Start Earning Today</h2>
+      <p class="text-slate-400 mb-8">Visit any TechMo branch and give your name and phone number — that's all it takes to join.</p>
+      <a href="/contact" class="inline-block bg-[#f59e0b] text-[#0f172a] px-8 py-3.5 rounded-xl font-bold hover:bg-[#d97706] transition-colors">
+        Find a Branch Near You →
+      </a>
+    </div>
+  </section>
+
+  <Footer />
+</Layout>
+
+<style>
+  .hero-section {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%);
+  }
+  .faq-item {
+    @apply bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden;
+  }
+  .faq-question {
+    @apply flex items-center gap-3 px-6 py-4 cursor-pointer font-semibold text-[#0f172a] text-sm select-none list-none;
+  }
+  .faq-question::-webkit-details-marker { display: none; }
+  .faq-answer {
+    @apply px-6 pb-5 text-sm text-[#64748b] leading-relaxed border-t border-gray-50 pt-3;
+  }
+</style>

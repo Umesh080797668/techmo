@@ -1,0 +1,162 @@
+// TechMo Order/POS Service – Prisma Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Order {
+  id           String      @id @default(uuid())
+  orderNumber  String      @unique
+  customerId   String?
+  walkInName   String?     // optional name for walk-in customers
+  cashierId    String      // userId
+  status       OrderStatus @default(PENDING)
+  subtotal     Decimal     @db.Decimal(12, 2)
+  discountAmt  Decimal     @default(0) @db.Decimal(12, 2)
+  taxAmt       Decimal     @default(0) @db.Decimal(12, 2)
+  totalAmt     Decimal     @db.Decimal(12, 2)
+  loyaltyPtsEarned Int     @default(0)
+  loyaltyPtsRedeemed Int   @default(0)
+  paymentMethod String     @default("CASH") // CASH | CARD | TRANSFER
+  notes        String?
+  managerPin   String?     // hashed, required for discount overrides
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  items    OrderItem[]
+  invoice  Invoice?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id           String   @id @default(uuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id])
+  productId    String
+  variantId    String?
+  productName  String   // snapshot at time of sale
+  sku          String
+  imei         String?
+  serialNumber String?
+  quantity     Int
+  unitPrice    Decimal  @db.Decimal(12, 2)
+  discountAmt  Decimal  @default(0) @db.Decimal(12, 2)
+  lineTotal    Decimal  @db.Decimal(12, 2)
+  createdAt    DateTime @default(now())
+
+  @@map("order_items")
+}
+
+model Invoice {
+  id          String   @id @default(uuid())
+  orderId     String   @unique
+  order       Order    @relation(fields: [orderId], references: [id])
+  invoiceNo   String   @unique
+  pdfUrl      String?
+  isVoided    Boolean  @default(false)
+  voidedBy    String?
+  voidedAt    DateTime?
+  voidReason  String?
+  createdAt   DateTime @default(now())
+
+  @@map("invoices")
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  VOIDED
+  REFUNDED
+}
+
+// ─── Abandoned Reservation Tracker ──────────────────────────────────────────────
+model Reservation {
+  id          String            @id @default(uuid())
+  customerId  String?
+  customerName String
+  customerPhone String
+  staffId     String
+  productId   String
+  productName String
+  sku         String
+  quantity    Int               @default(1)
+  unitPrice   Decimal           @db.Decimal(12, 2)
+  status      ReservationStatus @default(ACTIVE)
+  expiresAt   DateTime
+  convertedOrderId String?
+  notes       String?
+  followUpAt  DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("reservations")
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONVERTED
+  EXPIRED
+  CANCELLED
+}
+
+// ─── Customer Consent Logs (GDPR / PDPA) ──────────────────────────────────────
+model CustomerConsent {
+  id          String   @id @default(uuid())
+  customerId  String
+  type        ConsentType
+  granted     Boolean
+  ipAddress   String?
+  userAgent   String?
+  recordedBy  String?  // staff userId or 'self'
+  createdAt   DateTime @default(now())
+
+  @@index([customerId, type])
+  @@map("customer_consents")
+}
+
+enum ConsentType {
+  MARKETING_SMS
+  MARKETING_EMAIL
+  MARKETING_WHATSAPP
+  DATA_ANALYTICS
+  THIRD_PARTY_SHARING
+}
+
+// ─── POS Mistake Prevention Rules ───────────────────────────────────────────────
+model PosRule {
+  id          String   @id @default(uuid())
+  type        PosRuleType
+  value       String   // e.g. "5" for max qty, "MANAGER_123" for pinHash
+  description String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("pos_rules")
+}
+
+enum PosRuleType {
+  MAX_DISCOUNT_PERCENT   // max % discount per item
+  MAX_QTY_PER_LINE       // alert if single line > N units
+  REQUIRE_MANAGER_PIN    // discount above threshold requires manager PIN
+  DUPLICATE_ITEM_WARN    // warn if same SKU added twice
+  HIGH_VALUE_ORDER_WARN  // warn if order total > N LKR
+}
+
+// ─── Audit Log ───────────────────────────────────────────────────────────────
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  actorId   String
+  metadata  String?  // JSON
+  createdAt DateTime @default(now())
+
+  @@index([actorId, action])
+  @@map("audit_logs")
+}
+

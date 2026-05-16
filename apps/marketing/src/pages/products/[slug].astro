@@ -1,0 +1,311 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+
+const { slug } = Astro.params;
+const GATEWAY = import.meta.env.GATEWAY_URL ?? 'http://localhost:3001';
+
+let product: any = null;
+let error = false;
+let notFound = false;
+
+try {
+  const res = await fetch(`${GATEWAY}/api/v1/products/slug/${slug}`, {
+    headers: { 'x-internal-request': '1' },
+  });
+  if (res.status === 404) {
+    notFound = true;
+  } else if (res.ok) {
+    product = await res.json();
+  } else {
+    error = true;
+  }
+} catch {
+  error = true;
+}
+
+if (notFound) return Astro.redirect('/products');
+
+const selectedVariant = product?.variants?.[0];
+const hasDiscount = selectedVariant && selectedVariant.basePrice !== selectedVariant.salePrice;
+
+const statusColors: Record<string, string> = {
+  AVAILABLE: 'bg-green-100 text-green-700',
+  LIMITED: 'bg-amber-100 text-amber-700',
+  OUT_OF_STOCK: 'bg-red-100 text-red-700',
+  DISCONTINUED: 'bg-gray-100 text-gray-500',
+};
+---
+<Layout
+  title={product ? `${product.name} — TechMo` : 'Product — TechMo'}
+  description={product?.description ?? 'Product details at TechMo Electronics'}
+>
+  <Navbar />
+
+  {error && (
+    <div class="bg-amber-50 border-b border-amber-200 text-amber-700 px-4 py-3 text-sm text-center">
+      ⚠️ Could not load full product details. Please try again later.
+    </div>
+  )}
+
+  {product ? (
+    <section class="py-12 px-4 bg-white">
+      <div class="max-w-5xl mx-auto">
+        <!-- Breadcrumb -->
+        <nav class="text-sm text-[#64748b] mb-8">
+          <a href="/" class="hover:text-[#1e40af]">Home</a>
+          <span class="mx-2">›</span>
+          <a href="/products" class="hover:text-[#1e40af]">Products</a>
+          <span class="mx-2">›</span>
+          <span class="text-[#0f172a] font-medium">{product.name}</span>
+        </nav>
+
+        <div class="grid md:grid-cols-2 gap-12">
+          <!-- Product Image -->
+          <div class="bg-[#f8fafc] rounded-2xl flex items-center justify-center h-80 md:h-96 overflow-hidden border border-gray-100">
+            {product.imageUrl
+              ? <img src={product.imageUrl} alt={product.name} class="object-contain h-full w-full p-6" />
+              : <div class="text-8xl">📱</div>
+            }
+          </div>
+
+          <!-- Product Info -->
+          <div>
+            <span class="text-xs font-semibold uppercase tracking-widest text-[#64748b] mb-2 block">
+              {product.category ?? 'Electronics'}
+            </span>
+            <h1 class="text-3xl font-bold text-[#0f172a] mb-3">{product.name}</h1>
+
+            {product.brand && (
+              <p class="text-sm text-[#64748b] mb-4">by <span class="font-medium text-[#0f172a]">{product.brand}</span></p>
+            )}
+
+            <!-- Pricing -->
+            {selectedVariant && (
+              <div class="mb-5">
+                <div class="flex items-baseline gap-3">
+                  <span class="text-3xl font-bold text-[#1e40af]">
+                    LKR {Number(selectedVariant.salePrice).toLocaleString()}
+                  </span>
+                  {hasDiscount && (
+                    <span class="text-lg text-gray-400 line-through">
+                      LKR {Number(selectedVariant.basePrice).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                {hasDiscount && (
+                  <span class="text-sm font-semibold text-green-600 mt-1 block">
+                    Save LKR {(Number(selectedVariant.basePrice) - Number(selectedVariant.salePrice)).toLocaleString()}
+                  </span>
+                )}
+              </div>
+            )}
+
+            <!-- Variants (if multiple) -->
+            {product.variants?.length > 1 && (
+              <div class="mb-5">
+                <p class="text-sm font-medium text-[#0f172a] mb-2">Available Options:</p>
+                <div class="flex flex-wrap gap-2" id="variant-picker">
+                  {product.variants.map((v: any, i: number) => (
+                    <button
+                      class={`variant-btn px-4 py-2 text-sm rounded-xl border font-medium transition-all duration-150
+                               ${i === 0 ? 'border-[#1e40af] bg-[#1e40af] text-white' : 'border-gray-200 text-gray-600 hover:border-[#1e40af]'}`}
+                      data-price={v.salePrice}
+                      data-storage={v.storageGB}
+                      data-color={v.color}
+                      onclick="selectVariant(this)"
+                    >
+                      {[v.storageGB ? `${v.storageGB}GB` : '', v.color].filter(Boolean).join(' / ')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <!-- Stock Status -->
+            {product.stockStatus && (
+              <div class="mb-5">
+                <span class={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${statusColors[product.stockStatus] ?? 'bg-gray-100 text-gray-600'}`}>
+                  {product.stockStatus?.replace(/_/g, ' ')}
+                </span>
+              </div>
+            )}
+
+            <!-- Warranty -->
+            {product.warrantyMonths && (
+              <div class="flex items-center gap-2 text-sm text-[#64748b] mb-6">
+                <span class="text-[#16a34a]">🛡️</span>
+                <span>{product.warrantyMonths} month{product.warrantyMonths > 1 ? 's' : ''} warranty included</span>
+              </div>
+            )}
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-6">
+              <button
+                onclick="openInquiryModal()"
+                class="flex-1 bg-[#1e40af] text-white py-3 rounded-xl font-semibold
+                       hover:bg-[#1e3a8a] transition-colors duration-[250ms]">
+                Inquire / Reserve In-Store
+              </button>
+              <a href="/contact"
+                 class="flex-1 text-center border-2 border-[#1e40af] text-[#1e40af] py-3 rounded-xl font-semibold
+                        hover:bg-[#f0f7ff] transition-colors duration-[250ms]">
+                Contact Us
+              </a>
+            </div>
+
+            <p class="text-xs text-[#64748b] bg-[#f8fafc] rounded-xl p-3 border border-gray-100">
+              💡 <strong>Note:</strong> Purchases are completed in-store only. Reserve online and we'll hold it for 48 hours.
+            </p>
+          </div>
+        </div>
+
+        <!-- Description -->
+        {product.description && (
+          <div class="mt-12 border-t border-gray-100 pt-10">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-4">Product Description</h2>
+            <div class="prose prose-sm max-w-none text-[#334155] leading-relaxed">
+              <p>{product.description}</p>
+            </div>
+          </div>
+        )}
+
+        <!-- Specifications -->
+        {product.specifications && Object.keys(product.specifications).length > 0 && (
+          <div class="mt-10 border-t border-gray-100 pt-10">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-4">Specifications</h2>
+            <div class="grid sm:grid-cols-2 gap-3">
+              {Object.entries(product.specifications).map(([key, val]) => (
+                <div class="flex justify-between bg-[#f8fafc] rounded-xl px-4 py-3 border border-gray-100">
+                  <span class="text-sm font-medium text-[#64748b]">{key}</span>
+                  <span class="text-sm text-[#0f172a] font-semibold text-right">{String(val)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <!-- Compatible Devices -->
+        {product.compatibleModels?.length > 0 && (
+          <div class="mt-10 border-t border-gray-100 pt-10">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-4">Compatible Devices</h2>
+            <div class="flex flex-wrap gap-2">
+              {product.compatibleModels.map((m: any) => (
+                <span class="text-xs bg-blue-50 text-[#1e40af] border border-blue-100 rounded-lg px-3 py-1.5 font-medium">
+                  {m.brand} {m.modelName}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  ) : (
+    <section class="py-32 px-4 text-center bg-white">
+      <div class="text-6xl mb-4">📦</div>
+      <h1 class="text-2xl font-bold text-[#0f172a] mb-2">Product Not Found</h1>
+      <p class="text-[#64748b] mb-6">This product may no longer be available.</p>
+      <a href="/products" class="inline-block bg-[#1e40af] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#1e3a8a]">
+        Browse All Products
+      </a>
+    </section>
+  )}
+
+  <!-- Inquiry Modal -->
+  <div id="inquiry-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl max-w-md w-full p-7 shadow-2xl">
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="text-lg font-bold text-[#0f172a]">Reserve / Inquire</h3>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+      <form id="inquiry-form" class="space-y-4">
+        <input type="hidden" name="productName" value={product?.name ?? ''} />
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Name *</label>
+            <input type="text" name="name" required
+              class="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e40af] transition" />
+          </div>
+          <div>
+            <label class="text-sm font-medium text-gray-700">Phone *</label>
+            <input type="tel" name="phone" required
+              class="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e40af] transition" />
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-gray-700">Message</label>
+          <textarea name="message" rows="2" placeholder="Any specific variant or questions?"
+            class="mt-1 w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e40af] transition"></textarea>
+        </div>
+        <button type="submit"
+          class="w-full bg-[#1e40af] text-white py-3 rounded-xl font-semibold hover:bg-[#1e3a8a] transition-colors duration-[250ms]">
+          Send Inquiry
+        </button>
+        <p id="modal-status" class="text-center text-sm min-h-[20px]"></p>
+      </form>
+    </div>
+  </div>
+
+  <Footer />
+</Layout>
+
+<script>
+  function openInquiryModal() {
+    document.getElementById('inquiry-modal')!.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    document.getElementById('inquiry-modal')!.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('inquiry-modal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  document.getElementById('inquiry-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const status = document.getElementById('modal-status')!;
+    status.textContent = 'Sending…';
+    const data = Object.fromEntries(new FormData(form));
+    try {
+      const res = await fetch(
+        `${import.meta.env.PUBLIC_GATEWAY_URL || ''}/api/v1/customers/inquiry`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }
+      );
+      if (res.ok) {
+        status.textContent = '✅ Inquiry sent! We\'ll contact you within 24 hours.';
+        status.className = 'text-center text-sm text-green-600';
+        form.reset();
+      } else {
+        status.textContent = '❌ Failed. Please call us directly.';
+        status.className = 'text-center text-sm text-red-500';
+      }
+    } catch {
+      status.textContent = '❌ Network error. Please call us.';
+      status.className = 'text-center text-sm text-red-500';
+    }
+  });
+
+  function selectVariant(btn: HTMLElement) {
+    document.querySelectorAll('.variant-btn').forEach(b => {
+      b.classList.remove('border-[#1e40af]', 'bg-[#1e40af]', 'text-white');
+      b.classList.add('border-gray-200', 'text-gray-600');
+    });
+    btn.classList.add('border-[#1e40af]', 'bg-[#1e40af]', 'text-white');
+    btn.classList.remove('border-gray-200', 'text-gray-600');
+    const price = btn.dataset.price;
+    if (price) {
+      const priceEl = document.querySelector('.text-3xl.font-bold.text-\\[\\#1e40af\\]');
+      if (priceEl) priceEl.textContent = `LKR ${Number(price).toLocaleString()}`;
+    }
+  }
+
+  (window as any).openInquiryModal = openInquiryModal;
+  (window as any).closeModal = closeModal;
+  (window as any).selectVariant = selectVariant;
+</script>

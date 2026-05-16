@@ -1,0 +1,193 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+
+const lastUpdated = 'February 25, 2026';
+---
+<Layout
+  title="Privacy Policy — TechMo Electronics"
+  description="Read TechMo's Privacy Policy. Learn how we collect, use, and protect your personal data."
+  canonical="/privacy-policy"
+>
+  <Navbar />
+
+  <!-- Header -->
+  <section class="bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] text-white py-14 px-4">
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="text-5xl mb-3" aria-hidden="true">🔒</div>
+      <h1 class="text-4xl font-bold mb-2">Privacy Policy</h1>
+      <p class="text-blue-200">Last updated: {lastUpdated}</p>
+    </div>
+  </section>
+
+  <!-- Content -->
+  <section class="py-14 px-4 bg-white">
+    <div class="max-w-3xl mx-auto prose-custom">
+
+      <div class="notice-box">
+        <strong>Your privacy matters to us.</strong> This Privacy Policy explains how TechMo Enterprise
+        (Pvt) Ltd ("TechMo", "we", "our", or "us") collects, uses, stores, and protects your
+        personal data when you visit our website, make a purchase, or use our repair services.
+      </div>
+
+      <section aria-labelledby="section-1">
+        <h2 id="section-1">1. Information We Collect</h2>
+        <h3>1.1 Information you provide directly</h3>
+        <ul>
+          <li><strong>Contact details:</strong> Name, phone number, email address, and delivery address when you make an inquiry, purchase, or booking.</li>
+          <li><strong>Device details:</strong> IMEI numbers, serial numbers, and device model information required for warranty registration and repair services.</li>
+          <li><strong>Repair information:</strong> Device condition, reported faults, and any accessories or items left with us.</li>
+          <li><strong>Loyalty programme:</strong> Account details including purchase history, earned points, and tier status.</li>
+          <li><strong>Payment details:</strong> Payment method type (cash, card) — we do <strong>not</strong> store card numbers or banking credentials.</li>
+        </ul>
+
+        <h3>1.2 Information collected automatically</h3>
+        <ul>
+          <li><strong>Usage data:</strong> Pages visited, time on site, and interaction with our content — collected via Cloudflare Web Analytics (cookie-free, GDPR-compliant).</li>
+          <li><strong>Device & browser data:</strong> Browser type, OS, and screen resolution for website optimisation.</li>
+          <li><strong>IP address:</strong> Used for security purposes and DDoS protection via Cloudflare.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="section-2">
+        <h2 id="section-2">2. How We Use Your Information</h2>
+        <ul>
+          <li>To process purchases, issue invoices, and fulfil orders</li>
+          <li>To manage repair tickets and send you real-time status updates</li>
+          <li>To validate warranty claims using IMEI/serial numbers</li>
+          <li>To manage your loyalty points account and send reward notifications</li>
+          <li>To respond to inquiries and provide customer support</li>
+          <li>To send transactional emails (invoice copies, repair updates, receipts)</li>
+          <li>To improve our website, products, and services</li>
+          <li>To comply with legal and regulatory obligations</li>
+          <li>To protect against fraud, abuse, and security threats</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="section-3">
+        <h2 id="section-3">3. Legal Basis for Processing (GDPR)</h2>
+        <p>We process your personal data on the following legal bases:</p>
+        <ul>
+          <li><strong>Contract performance:</strong> To fulfil purchases, repairs, and service agreements</li>
+          <li><strong>Legitimate interests:</strong> To improve our services, prevent fraud, and ensure security</li>
+          <li><strong>Legal obligation:</strong> To comply with tax, consumer protection, and other applicable laws</li>
+          <li><strong>Consent:</strong> Where you have opted in to marketing communications</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="section-4">
+        <h2 id="section-4">4. Data Sharing & Third Parties</h2>
+        <p>We do not sell, rent, or trade your personal data. We may share data with:</p>
+        <ul>
+          <li><strong>Cloudflare:</strong> For CDN, DDoS protection, analytics, and bot protection (privacy-first, no personal data used in analytics)</li>
+          <li><strong>Cloudinary:</strong> For storage and delivery of invoice PDFs and receipt images</li>
+          <li><strong>SMTP provider (Gmail/custom):</strong> To send transactional emails on our behalf</li>
+          <li><strong>Legal authorities:</strong> If required by law, court order, or to protect our legal rights</li>
+        </ul>
+        <p>All third-party processors are bound by data processing agreements and appropriate safeguards.</p>
+      </section>
+
+      <section aria-labelledby="section-5">
+        <h2 id="section-5">5. Data Retention</h2>
+        <ul>
+          <li><strong>Transaction records:</strong> Retained for 7 years to comply with tax regulations</li>
+          <li><strong>Repair records:</strong> Retained for the duration of the applicable warranty period plus 2 years</li>
+          <li><strong>Inquiry data:</strong> Retained for 12 months unless converted to a customer account</li>
+          <li><strong>Loyalty account:</strong> Retained while your account is active; deleted 3 years after last activity upon request</li>
+          <li><strong>Website analytics:</strong> Aggregated, non-personal data; retained indefinitely</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="section-6">
+        <h2 id="section-6">6. Your Rights</h2>
+        <p>Depending on your location, you may have the following rights:</p>
+        <ul>
+          <li><strong>Right of access:</strong> Request a copy of your personal data</li>
+          <li><strong>Right to rectification:</strong> Correct inaccurate or incomplete data</li>
+          <li><strong>Right to erasure:</strong> Request deletion of your data (subject to legal retention requirements)</li>
+          <li><strong>Right to restriction:</strong> Limit how we process your data</li>
+          <li><strong>Right to data portability:</strong> Receive your data in a portable format</li>
+          <li><strong>Right to object:</strong> Object to processing based on legitimate interests</li>
+          <li><strong>Right to withdraw consent:</strong> Where consent is the legal basis</li>
+        </ul>
+        <p>To exercise any right, contact us at <a href="mailto:privacy@techmo.lk">privacy@techmo.lk</a>. We will respond within 30 days.</p>
+      </section>
+
+      <section aria-labelledby="section-7">
+        <h2 id="section-7">7. Security</h2>
+        <p>We implement appropriate technical and organisational measures to protect your data, including:</p>
+        <ul>
+          <li>TLS 1.3 encryption for all data in transit</li>
+          <li>Encrypted databases with access controls</li>
+          <li>Role-based access control (RBAC) limiting staff data access</li>
+          <li>Immutable audit logs for all sensitive operations</li>
+          <li>Cloudflare WAF and DDoS protection</li>
+          <li>Regular security assessments</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="section-8">
+        <h2 id="section-8">8. Cookies & Tracking</h2>
+        <p>Our website uses minimal tracking. Please see our <a href="/cookies">Cookie Policy</a> for full details.
+        We use Cloudflare Web Analytics, which is cookie-free and does not track individuals.</p>
+      </section>
+
+      <section aria-labelledby="section-9">
+        <h2 id="section-9">9. Children's Privacy</h2>
+        <p>Our services are not directed to individuals under 16 years of age. We do not knowingly collect
+        personal data from children. If you believe a child has provided us with personal data, please
+        contact us immediately.</p>
+      </section>
+
+      <section aria-labelledby="section-10">
+        <h2 id="section-10">10. Changes to This Policy</h2>
+        <p>We may update this Privacy Policy periodically. Material changes will be notified via our website
+        with an updated "last updated" date. Your continued use of our services after changes constitutes
+        acceptance of the updated policy.</p>
+      </section>
+
+      <section aria-labelledby="section-11">
+        <h2 id="section-11">11. Contact Us</h2>
+        <div class="contact-card">
+          <p><strong>TechMo Enterprise (Pvt) Ltd</strong><br />
+          45 Galle Road, Colombo 03, Sri Lanka</p>
+          <p>Email: <a href="mailto:privacy@techmo.lk">privacy@techmo.lk</a><br />
+          Phone: <a href="tel:+94112345678">+94 11 234 5678</a><br />
+          Hours: Monday – Saturday, 9am – 7pm</p>
+        </div>
+      </section>
+
+      <div class="flex flex-wrap gap-4 mt-10 pt-6 border-t border-gray-100">
+        <a href="/terms" class="policy-link">Terms of Service →</a>
+        <a href="/cookies" class="policy-link">Cookie Policy →</a>
+        <a href="/contact" class="policy-link">Contact Us →</a>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+</Layout>
+
+<style>
+  .prose-custom { @apply text-[#334155] leading-relaxed; }
+  .prose-custom h2 {
+    @apply text-xl font-bold text-[#0f172a] mt-10 mb-4 pb-2 border-b border-gray-100;
+  }
+  .prose-custom h3 { @apply text-base font-semibold text-[#0f172a] mt-5 mb-2; }
+  .prose-custom p { @apply mb-4 text-[15px]; }
+  .prose-custom ul { @apply list-disc pl-5 space-y-1.5 mb-4 text-[15px]; }
+  .prose-custom li { @apply text-[#334155]; }
+  .prose-custom a { @apply text-[#1e40af] hover:underline font-medium; }
+  .notice-box {
+    @apply bg-blue-50 border border-blue-100 rounded-xl p-5 mb-8 text-sm text-[#334155];
+  }
+  .contact-card {
+    @apply bg-[#f8fafc] rounded-xl border border-gray-100 p-5 mt-3 text-sm;
+    line-height: 1.8;
+  }
+  .policy-link {
+    @apply inline-flex items-center gap-1 text-sm font-medium text-[#1e40af]
+           hover:text-[#1e3a8a] transition-colors;
+  }
+</style>

@@ -1,0 +1,187 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+
+const lastUpdated = 'February 25, 2026';
+---
+<Layout
+  title="Terms of Service — TechMo Electronics"
+  description="Read TechMo's Terms of Service. Understand the rules, rights, and responsibilities when using our services."
+  canonical="/terms"
+>
+  <Navbar />
+
+  <!-- Header -->
+  <section class="bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] text-white py-14 px-4">
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="text-5xl mb-3" aria-hidden="true">📜</div>
+      <h1 class="text-4xl font-bold mb-2">Terms of Service</h1>
+      <p class="text-blue-200">Last updated: {lastUpdated}</p>
+    </div>
+  </section>
+
+  <section class="py-14 px-4 bg-white">
+    <div class="max-w-3xl mx-auto prose-custom">
+
+      <div class="notice-box">
+        Please read these Terms of Service carefully before using TechMo's website or services.
+        By using our services, you agree to be bound by these terms.
+      </div>
+
+      <section aria-labelledby="t1">
+        <h2 id="t1">1. Acceptance of Terms</h2>
+        <p>By accessing or using the TechMo Electronics website (<em>techmo.lk</em>) or any TechMo service,
+        you agree to these Terms of Service and our <a href="/privacy-policy">Privacy Policy</a>.
+        If you do not agree, you may not use our services.</p>
+        <p>These terms apply to all users including visitors, customers, repair customers, and loyalty programme members.</p>
+      </section>
+
+      <section aria-labelledby="t2">
+        <h2 id="t2">2. Products & Purchases</h2>
+        <h3>2.1 Product Availability</h3>
+        <p>All products displayed on our website are subject to availability. Prices and product listings
+        are for informational purposes and may change without notice. Product images are representative only.</p>
+
+        <h3>2.2 Pricing & Payment</h3>
+        <ul>
+          <li>All prices are displayed in Sri Lankan Rupees (LKR) inclusive of applicable taxes.</li>
+          <li>Purchases must be completed in-store; our website does not facilitate online payment.</li>
+          <li>Price quotes via our inquiry form are valid for 48 hours unless otherwise stated.</li>
+          <li>We reserve the right to cancel or refuse any order at our discretion.</li>
+        </ul>
+
+        <h3>2.3 Product Inquiries & Reservations</h3>
+        <p>Submitting an inquiry or reservation request via our website does not constitute a binding
+        purchase. Products are held for a maximum of 48 hours after confirmation, after which the
+        reservation may be released.</p>
+      </section>
+
+      <section aria-labelledby="t3">
+        <h2 id="t3">3. Repair Services</h2>
+        <h3>3.1 Acceptance of Devices</h3>
+        <p>By submitting a device for repair, you confirm that:</p>
+        <ul>
+          <li>You are the lawful owner of the device or authorised to consent to repairs.</li>
+          <li>You have backed up your data — TechMo is not responsible for data loss during repairs.</li>
+          <li>You have disclosed all known issues and prior repairs/modifications.</li>
+          <li>Devices with physical damage, liquid damage, or unauthorised modifications may affect warranty coverage.</li>
+        </ul>
+
+        <h3>3.2 Repair Estimates</h3>
+        <p>Estimates are provided in good faith. Final costs may differ if additional faults are discovered
+        during diagnosis. You will be notified and must approve any cost exceeding the initial estimate
+        before work proceeds.</p>
+
+        <h3>3.3 Uncollected Devices</h3>
+        <p>Repaired devices must be collected within 30 days of completion notice. After 60 days, TechMo
+        reserves the right to dispose of uncollected devices to recover storage and repair costs,
+        with minimum 14 days written notice.</p>
+
+        <h3>3.4 Repair Warranty</h3>
+        <p>All repairs carry a 90-day warranty on parts and labour, covering the specific fault repaired.
+        This warranty is void if the device is subsequently damaged, tampered with, or subjected to
+        liquid damage. See our full <a href="/warranty">Warranty Policy</a> for details.</p>
+      </section>
+
+      <section aria-labelledby="t4">
+        <h2 id="t4">4. Warranty</h2>
+        <p>Product and repair warranties are governed by our dedicated <a href="/warranty">Warranty Policy</a>.
+        Warranties do not cover accidental damage, misuse, liquid exposure, or normal wear and tear.</p>
+      </section>
+
+      <section aria-labelledby="t5">
+        <h2 id="t5">5. Loyalty Programme</h2>
+        <ul>
+          <li>Loyalty points are awarded at TechMo's discretion and subject to change.</li>
+          <li>Points have no cash value and cannot be transferred, sold, or exchanged.</li>
+          <li>Points expire after 24 months of account inactivity.</li>
+          <li>Fraudulent point accumulation will result in account termination and forfeiture of all points.</li>
+          <li>TechMo reserves the right to modify or terminate the loyalty programme with 30 days' notice.</li>
+          <li>Redeemed discounts cannot be combined with other promotions unless explicitly stated.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="t6">
+        <h2 id="t6">6. Website Use</h2>
+        <h3>6.1 Permitted Use</h3>
+        <p>You may use our website for lawful personal purposes only. You may not:</p>
+        <ul>
+          <li>Scrape, crawl, or harvest content without permission</li>
+          <li>Attempt to gain unauthorised access to any system or data</li>
+          <li>Submit false, misleading, or fraudulent inquiries</li>
+          <li>Use automated tools to submit forms or contact requests</li>
+          <li>Interfere with the operation of our website or services</li>
+        </ul>
+
+        <h3>6.2 Intellectual Property</h3>
+        <p>All content, logos, trademarks, and materials on this website are owned by or licensed to
+        TechMo. You may not reproduce, distribute, or modify any content without written permission.</p>
+      </section>
+
+      <section aria-labelledby="t7">
+        <h2 id="t7">7. Returns & Refunds</h2>
+        <ul>
+          <li><strong>Defective products:</strong> Eligible for exchange or refund within 14 days with original receipt and packaging.</li>
+          <li><strong>Change of mind:</strong> We do not offer refunds for change-of-mind purchases on electronics.</li>
+          <li><strong>Repair refunds:</strong> If a repair cannot be completed, the diagnosis fee (if applicable) may be charged. No repair fee is charged for incomplete work.</li>
+          <li>Refunds are processed via the original payment method within 7 working days.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="t8">
+        <h2 id="t8">8. Limitation of Liability</h2>
+        <p>To the maximum extent permitted by law, TechMo shall not be liable for:</p>
+        <ul>
+          <li>Indirect, incidental, or consequential loss or damage</li>
+          <li>Loss of data, profits, or business arising from use of our services</li>
+          <li>Service interruptions or website downtime</li>
+          <li>Third-party actions or content</li>
+        </ul>
+        <p>Our total liability shall not exceed the value of the transaction giving rise to the claim.</p>
+      </section>
+
+      <section aria-labelledby="t9">
+        <h2 id="t9">9. Governing Law</h2>
+        <p>These Terms are governed by the laws of Sri Lanka. Any disputes shall be subject to the
+        exclusive jurisdiction of the courts of Sri Lanka.</p>
+      </section>
+
+      <section aria-labelledby="t10">
+        <h2 id="t10">10. Changes to Terms</h2>
+        <p>We may update these Terms at any time. Continued use of our services after changes constitutes
+        acceptance. Material changes will be communicated via our website.</p>
+      </section>
+
+      <section aria-labelledby="t11">
+        <h2 id="t11">11. Contact</h2>
+        <div class="contact-card">
+          <p><strong>TechMo Enterprise (Pvt) Ltd</strong><br />
+          45 Galle Road, Colombo 03, Sri Lanka<br />
+          Email: <a href="mailto:legal@techmo.lk">legal@techmo.lk</a><br />
+          Phone: <a href="tel:+94112345678">+94 11 234 5678</a></p>
+        </div>
+      </section>
+
+      <div class="flex flex-wrap gap-4 mt-10 pt-6 border-t border-gray-100">
+        <a href="/privacy-policy" class="policy-link">Privacy Policy →</a>
+        <a href="/warranty" class="policy-link">Warranty Policy →</a>
+        <a href="/cookies" class="policy-link">Cookie Policy →</a>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+</Layout>
+
+<style>
+  .prose-custom { @apply text-[#334155] leading-relaxed; }
+  .prose-custom h2 { @apply text-xl font-bold text-[#0f172a] mt-10 mb-4 pb-2 border-b border-gray-100; }
+  .prose-custom h3 { @apply text-base font-semibold text-[#0f172a] mt-5 mb-2; }
+  .prose-custom p { @apply mb-4 text-[15px]; }
+  .prose-custom ul { @apply list-disc pl-5 space-y-1.5 mb-4 text-[15px]; }
+  .prose-custom a { @apply text-[#1e40af] hover:underline font-medium; }
+  .notice-box { @apply bg-amber-50 border border-amber-100 rounded-xl p-5 mb-8 text-sm text-[#334155]; }
+  .contact-card { @apply bg-[#f8fafc] rounded-xl border border-gray-100 p-5 mt-3 text-sm; line-height: 1.8; }
+  .policy-link { @apply inline-flex items-center gap-1 text-sm font-medium text-[#1e40af] hover:text-[#1e3a8a] transition-colors; }
+</style>

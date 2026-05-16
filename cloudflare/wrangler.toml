@@ -1,0 +1,41 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Cloudflare Wrangler Configuration – TechMo Marketing Site (Astro)
+# ─────────────────────────────────────────────────────────────────────────────
+# Deploy the Astro marketing site to Cloudflare Pages (free plan).
+#
+# Setup:
+#   npm install -g wrangler
+#   wrangler login
+#   cd apps/marketing && npm run build
+#   wrangler pages deploy dist/ --project-name techmo-marketing
+#
+# Or connect your Git repo in the Cloudflare Pages dashboard for automatic
+# deployments on every push.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name = "techmo-marketing"
+
+# Cloudflare Pages project (static Astro build output)
+pages_build_output_dir = "dist"
+
+# Compatibility date — use today's date or later
+compatibility_date = "2026-02-25"
+
+# Environment variables available at build time (safe to commit non-secrets)
+[vars]
+PUBLIC_GATEWAY_URL = "https://api.techmo.lk"
+CF_TURNSTILE_SITE_KEY = ""   # fill in your site key (safe to expose client-side)
+
+# ── Production environment overrides ─────────────────────────────────────────
+[env.production]
+name = "techmo-marketing"
+
+[env.production.vars]
+PUBLIC_GATEWAY_URL = "https://api.techmo.lk"
+
+# ── Preview environment (pull request previews) ───────────────────────────────
+[env.preview]
+name = "techmo-marketing-preview"
+
+[env.preview.vars]
+PUBLIC_GATEWAY_URL = "https://api.techmo.lk"

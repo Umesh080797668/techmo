@@ -1,0 +1,50 @@
+{
+  "name": "Warranty Expiry Reminders (7 days before)",
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 9 * * *" }] }
+      }
+    },
+    {
+      "id": "fetch_expiring",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/warranty/expiring-soon?daysAhead=7",
+        "headerParameters": {
+          "parameters": [{ "name": "x-n8n-secret", "value": "={{ $env.N8N_SECRET }}" }]
+        }
+      }
+    },
+    {
+      "id": "loop",
+      "type": "n8n-nodes-base.splitInBatches",
+      "parameters": { "batchSize": 20 }
+    },
+    {
+      "id": "build_link",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GATEWAY_URL }}/api/v1/notifications/whatsapp-link",
+        "jsonBody": {
+          "phone":    "={{ $json.customerPhone }}",
+          "template": "WARRANTY_EXPIRY",
+          "context":  {
+            "name":       "={{ $json.customerName }}",
+            "device":     "={{ $json.deviceName }}",
+            "expiryDate": "={{ $json.warrantyExpiry }}"
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "trigger":         { "main": [["fetch_expiring"]] },
+    "fetch_expiring":  { "main": [["loop"]] },
+    "loop":            { "main": [["build_link"]] }
+  }
+}

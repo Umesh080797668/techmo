@@ -1,0 +1,45 @@
+{
+  "name": "techmo-product-service",
+  "version": "1.0.0",
+  "description": "Product catalog, device compatibility, IMEI/serial & pricing engine",
+  "scripts": {
+    "build": "nest build",
+    "start": "node dist/main",
+    "start:dev": "nest start --watch",
+    "db:migrate": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "db:seed": "ts-node prisma/seed.ts",
+    "lint": "eslint \"{src,apps,libs}/**/*.ts\"",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@nestjs/cache-manager": "^2.2.0",
+    "@nestjs/common": "^10.3.0",
+    "@nestjs/config": "^3.2.0",
+    "@nestjs/core": "^10.3.0",
+    "@nestjs/platform-express": "^10.3.0",
+    "@nestjs/swagger": "^7.3.0",
+    "@nestjs/throttler": "^5.1.1",
+    "@prisma/adapter-pg": "^7.4.1",
+    "@prisma/client": "^7.4.1",
+    "cache-manager": "^5.4.0",
+    "cache-manager-ioredis-yet": "^2.1.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "cloudinary": "^2.9.0",
+    "ioredis": "^5.3.2",
+    "meilisearch": "^0.55.0",
+    "pg": "^8.19.0",
+    "reflect-metadata": "^0.2.1",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.3.1",
+    "@nestjs/testing": "^10.3.0",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^20.11.5",
+    "@types/pg": "^8.16.0",
+    "prisma": "^7.4.1",
+    "typescript": "^5.3.3"
+  }
+}

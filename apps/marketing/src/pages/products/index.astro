@@ -1,0 +1,197 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+
+const GATEWAY = import.meta.env.GATEWAY_URL ?? 'http://localhost:3001';
+
+let products: any[] = [];
+let error = false;
+
+try {
+  const res = await fetch(`${GATEWAY}/api/v1/products?limit=60&page=1`, {
+    headers: { 'x-internal-request': '1' },
+  });
+  if (res.ok) {
+    const json = await res.json();
+    products = json.data ?? json.products ?? json ?? [];
+  }
+} catch {
+  error = true;
+}
+
+const categories = ['All', 'Smartphones', 'Tablets', 'Audio', 'Chargers', 'Cases', 'Batteries', 'Accessories'];
+---
+<Layout title="Products — TechMo Electronics" description="Browse our full range of smartphones, accessories, spare parts and more.">
+  <Navbar />
+
+  <!-- Page Header -->
+  <section class="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] text-white py-14 px-4">
+    <div class="max-w-6xl mx-auto">
+      <h1 class="text-4xl font-bold mb-2">Our Products</h1>
+      <p class="text-blue-200">Find the right device or accessory for you.</p>
+    </div>
+  </section>
+
+  <!-- Filter + Search Bar -->
+  <section class="bg-white border-b border-gray-100 sticky top-[65px] z-30 px-4 py-3 shadow-sm">
+    <div class="max-w-6xl mx-auto flex flex-wrap gap-3 items-center">
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Search products…"
+        class="flex-1 min-w-[200px] border border-gray-200 rounded-xl px-4 py-2 text-sm
+               focus:outline-none focus:ring-2 focus:ring-[#1e40af] transition duration-150"
+        oninput="filterProducts()"
+      />
+      <div class="flex gap-2 flex-wrap" id="category-filters">
+        {categories.map((cat, i) => (
+          <button
+            class={`category-btn px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150
+                    ${i === 0
+                      ? 'bg-[#1e40af] text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            data-category={cat}
+            onclick="setCategory(this)"
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Grid -->
+  <section class="py-12 px-4 bg-[#f8fafc] min-h-[60vh]">
+    <div class="max-w-6xl mx-auto">
+      {error && (
+        <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl p-4 text-sm mb-8">
+          ⚠️ Could not load live products. Showing placeholder catalog.
+        </div>
+      )}
+
+      <div id="product-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        {products.length > 0
+          ? products.map((p: any) => (
+            <a
+              href={`/products/${p.slug ?? p.id}`}
+              class="product-card group bg-white rounded-2xl border border-gray-100 overflow-hidden
+                     hover:shadow-lg hover:-translate-y-1 transition-all duration-[300ms]"
+              data-name={(p.name ?? '').toLowerCase()}
+              data-category={(p.category ?? '').toLowerCase()}
+            >
+              <div class="h-44 bg-gray-50 flex items-center justify-center text-5xl overflow-hidden">
+                {p.imageUrl
+                  ? <img src={p.imageUrl} alt={p.name} class="h-full w-full object-cover" />
+                  : '📱'
+                }
+              </div>
+              <div class="p-4">
+                <p class="text-xs text-[#64748b] font-medium uppercase tracking-wide mb-1">{p.category ?? 'Electronics'}</p>
+                <h3 class="font-semibold text-[#0f172a] text-sm leading-snug mb-2 line-clamp-2">{p.name}</h3>
+                {p.variants?.[0]?.salePrice && (
+                  <div class="flex items-baseline gap-2">
+                    <span class="text-[#1e40af] font-bold">
+                      LKR {Number(p.variants[0].salePrice).toLocaleString()}
+                    </span>
+                    {p.variants[0].basePrice !== p.variants[0].salePrice && (
+                      <span class="text-xs text-gray-400 line-through">
+                        LKR {Number(p.variants[0].basePrice).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div class="mt-3 text-xs text-[#1e40af] font-semibold group-hover:underline">
+                  View Details →
+                </div>
+              </div>
+            </a>
+          ))
+          : /* Placeholder cards when products not loaded */
+          [
+            { emoji: '📱', name: 'Smartphones', desc: 'Latest models from top brands' },
+            { emoji: '🎧', name: 'Audio & Earphones', desc: 'Wired and wireless options' },
+            { emoji: '🔋', name: 'Batteries & Chargers', desc: 'Genuine replacement parts' },
+            { emoji: '🛡️', name: 'Cases & Covers', desc: 'Protect your device in style' },
+            { emoji: '📺', name: 'Tablets', desc: 'Productivity and entertainment' },
+            { emoji: '🔌', name: 'Cables & Adapters', desc: 'Every connector you need' },
+          ].map(p => (
+            <div class="product-card bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-[300ms]"
+                 data-name={p.name.toLowerCase()} data-category="all">
+              <div class="h-44 bg-gray-50 flex items-center justify-center text-6xl">{p.emoji}</div>
+              <div class="p-4">
+                <h3 class="font-semibold text-[#0f172a] mb-1">{p.name}</h3>
+                <p class="text-sm text-[#64748b]">{p.desc}</p>
+                <a href="/contact" class="mt-3 inline-block text-xs text-[#1e40af] font-semibold hover:underline">
+                  Inquire →
+                </a>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+
+      <div id="no-results" class="hidden text-center py-20 text-gray-400">
+        <div class="text-5xl mb-3">🔍</div>
+        <p>No products match your search.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Inquiry CTA -->
+  <section class="py-14 px-4 bg-white border-t border-gray-100">
+    <div class="max-w-2xl mx-auto text-center">
+      <h2 class="text-2xl font-bold text-[#0f172a] mb-2">Can't find what you need?</h2>
+      <p class="text-[#64748b] mb-6">
+        Our catalog is updated regularly. Contact us and we'll source it for you.
+      </p>
+      <a href="/contact"
+         class="inline-block bg-[#1e40af] text-white px-8 py-3 rounded-xl font-semibold
+                hover:bg-[#1e3a8a] transition-colors duration-[250ms]">
+        Send an Inquiry
+      </a>
+    </div>
+  </section>
+
+  <Footer />
+</Layout>
+
+<script>
+  let activeCategory = 'all';
+
+  function filterProducts() {
+    const query = (document.getElementById('search-input') as HTMLInputElement).value.toLowerCase();
+    const cards = document.querySelectorAll('.product-card');
+    let visible = 0;
+
+    cards.forEach((card: any) => {
+      const name = card.dataset.name ?? '';
+      const cat = card.dataset.category ?? '';
+      const matchSearch = !query || name.includes(query);
+      const matchCat = activeCategory === 'all' || cat.includes(activeCategory);
+      const show = matchSearch && matchCat;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    const noResults = document.getElementById('no-results')!;
+    noResults.classList.toggle('hidden', visible > 0);
+  }
+
+  function setCategory(btn: HTMLElement) {
+    document.querySelectorAll('.category-btn').forEach(b => {
+      b.classList.remove('bg-[#1e40af]', 'text-white');
+      b.classList.add('bg-gray-100', 'text-gray-600');
+    });
+    btn.classList.add('bg-[#1e40af]', 'text-white');
+    btn.classList.remove('bg-gray-100', 'text-gray-600');
+    activeCategory = (btn.dataset.category ?? 'all').toLowerCase();
+    filterProducts();
+  }
+
+  // Make functions available globally
+  (window as any).filterProducts = filterProducts;
+  (window as any).setCategory = setCategory;
+</script>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #111; }
+    .header { background: #1e40af; color: white; padding: 20px 30px; }
+    .header h1 { font-size: 22px; }
+    .header p { font-size: 11px; margin-top: 2px; }
+    .invoice-meta { display: flex; justify-content: space-between; padding: 15px 30px; background: #f1f5f9; }
+    .section { padding: 15px 30px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { background: #1e40af; color: white; padding: 8px 10px; text-align: left; font-size: 12px; }
+    td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .totals { text-align: right; padding: 15px 30px; }
+    .totals .row { display: flex; justify-content: flex-end; gap: 20px; margin: 4px 0; }
+    .totals .total { font-size: 16px; font-weight: bold; color: #1e40af; }
+    .footer { text-align: center; padding: 15px; font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>TechMo Electronics</h1>
+    <p>Professional Electronics Sales & Service</p>
+  </div>
+
+  <div class="invoice-meta">
+    <div>
+      <strong>Invoice No:</strong> {{ invoice_no }}<br>
+      <strong>Date:</strong> {{ date }}<br>
+      <strong>Cashier:</strong> {{ cashier_name }}
+    </div>
+    <div>
+      <strong>Customer:</strong> {{ customer_name }}<br>
+      <span style="font-size:11px; color:#475569;">
+        {% if 'Walk-in' in customer_name %}Walk-in Customer{% else %} Registered{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <div class="section">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Product</th>
+          <th>SKU</th>
+          <th>Qty</th>
+          <th>Unit Price</th>
+          <th>Discount</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ item.product_name }}</td>
+          <td>{{ item.sku }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>LKR {{ "%.2f"|format(item.unit_price) }}</td>
+          <td>{% if item.discount_amt > 0 %}LKR {{ "%.2f"|format(item.discount_amt) }}{% else %}—{% endif %}</td>
+          <td>LKR {{ "%.2f"|format(item.line_total) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="totals">
+    <div class="row"><span>Subtotal:</span><span>LKR {{ "%.2f"|format(subtotal) }}</span></div>
+    {% if discount > 0 %}
+    <div class="row"><span>Discount:</span><span>- LKR {{ "%.2f"|format(discount) }}</span></div>
+    {% endif %}
+    <div class="row total"><span>TOTAL:</span><span>LKR {{ "%.2f"|format(total) }}</span></div>
+  </div>
+
+  <div class="footer">
+    Thank you for shopping at TechMo! | Warranty claims require original invoice and IMEI.
+  </div>
+</body>
+</html>

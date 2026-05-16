@@ -1,0 +1,39 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Cloudflare Tunnel Configuration – TechMo
+# ─────────────────────────────────────────────────────────────────────────────
+# Used by cloudflared to securely expose local services to Cloudflare Edge.
+# No port forwarding or firewall rules required.
+#
+# Setup:
+#   1. Login: cloudflared tunnel login
+#   2. Create: cloudflared tunnel create techmo-tunnel
+#   3. Copy the tunnel credentials JSON to ~/.cloudflared/<UUID>.json
+#   4. Update tunnel ID and credentials-file below
+#   5. Add DNS routes in the Cloudflare dashboard or via:
+#        cloudflared tunnel route dns techmo-tunnel api.techmo.lk
+#
+# Or use the Zero Trust dashboard (recommended):
+#   https://one.dash.cloudflare.com → Networks → Tunnels → Create a tunnel
+#   The dashboard generates a token — use CF_TUNNEL_TOKEN env var in Docker.
+# ─────────────────────────────────────────────────────────────────────────────
+
+tunnel: <YOUR_TUNNEL_UUID>
+credentials-file: /etc/cloudflared/<YOUR_TUNNEL_UUID>.json
+
+ingress:
+  # API Gateway – handles all /api/v1/* routes (JWT validated by NestJS)
+  - hostname: api.techmo.lk
+    service: http://gateway:3000
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+      tcpKeepAlive: 30s
+
+  # Admin dashboard (internal-only recommended; remove if purely LAN)
+  - hostname: admin.techmo.lk
+    service: http://admin:4001
+    originRequest:
+      noTLSVerify: true
+
+  # Catch-all: reject unmatched requests
+  - service: http_status:404

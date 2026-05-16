@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #111; max-width: 400px; margin: auto; }
+    .header { background: #1e40af; color: white; padding: 15px 20px; text-align: center; }
+    .ticket-no { font-size: 20px; font-weight: bold; margin: 10px 0; text-align: center; color: #1e40af; }
+    .section { padding: 10px 20px; }
+    .label { font-size: 10px; color: #64748b; text-transform: uppercase; }
+    .value { font-size: 13px; font-weight: bold; margin-bottom: 8px; }
+    .status { display: inline-block; background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 99px; font-size: 12px; }
+    .qr-hint { text-align: center; font-size: 10px; color: #64748b; padding: 10px; }
+    .footer { text-align: center; font-size: 10px; color: #64748b; padding: 10px; border-top: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <strong>TechMo Repair Receipt</strong>
+  </div>
+  <div class="ticket-no">Ticket #{{ ticket_number }}</div>
+
+  <div class="section">
+    <div class="label">Customer</div>
+    <div class="value">{{ customer_name }} – {{ customer_phone }}</div>
+
+    <div class="label">Device</div>
+    <div class="value">{{ device }}</div>
+
+    <div class="label">Issue</div>
+    <div class="value">{{ issue }}</div>
+
+    <div class="label">Status</div>
+    <div class="value"><span class="status">{{ status.replace('_', ' ') }}</span></div>
+
+    {% if estimated_cost %}
+    <div class="label">Estimated Cost</div>
+    <div class="value">LKR {{ "%.2f"|format(estimated_cost) }}</div>
+    {% endif %}
+  </div>
+
+  <div class="qr-hint">
+    Scan QR to check real-time repair status
+  </div>
+
+  <div class="footer">
+    TechMo Electronics – Professional Repair Service<br>
+    Keep this receipt to claim your device.
+  </div>
+</body>
+</html>

@@ -1,0 +1,123 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Cloudflare WAF — IP Whitelist & Security Rules for TechMo POS
+# ─────────────────────────────────────────────────────────────────────────────
+# This file documents the WAF Custom Rules that protect the admin panel and
+# API endpoints. Apply them via the Cloudflare Dashboard or the CF Terraform
+# provider (cloudflare_ruleset resource).
+#
+# Target zones: admin.techmo.lk, api.techmo.lk
+# Customer portal (customer.techmo.lk) remains fully public.
+#
+# ── How to apply via Dashboard ────────────────────────────────────────────────
+# 1. Cloudflare Dashboard → Select Zone (techmo.lk)
+# 2. Security → WAF → Custom Rules → Create rule
+# 3. Paste each expression below and set the described action
+# 4. Set priority order: Rule 1 → 2 → 3 → 4
+# ─────────────────────────────────────────────────────────────────────────────
+
+rules:
+
+  # ── Rule 1: Admin IP Whitelist (BLOCK — highest priority) ──────────────────
+  # Only the shop's static IP and staff VPN can reach admin and API paths.
+  # Every other IP gets a hard 403 at the Cloudflare edge, so requests
+  # never reach the origin server.
+  #
+  # Action     : Block
+  # Priority   : 1
+  # Description: POS-ADMIN-IP-WHITELIST
+  #
+  # Replace values:
+  #   SHOP_STATIC_IP  — Your ISP-assigned static IP, e.g. 203.0.113.10
+  #   VPN_CIDR        — Staff VPN subnet, e.g. 10.8.0.0/24 (or remove if unused)
+  #
+  - name: POS-ADMIN-IP-WHITELIST
+    expression: |
+      (
+        http.request.uri.path wildcard "/admin*" or
+        http.request.uri.path wildcard "/api/v1*"
+      ) and not (
+        ip.src eq ${SHOP_STATIC_IP} or
+        ip.src in {${VPN_CIDR}}
+      )
+    action: block
+    enabled: true
+    note: >
+      Update SHOP_STATIC_IP if your ISP changes your address.
+      Check current IP: https://api.ipify.org
+
+  # ── Rule 2: Login Brute-Force Protection (MANAGED CHALLENGE) ───────────────
+  # Triggers a JS challenge (invisible for real browsers) after 10 login
+  # attempts per IP per minute. No real user will be blocked; bots fail.
+  #
+  # Action     : Managed Challenge
+  # Priority   : 2
+  # Note: Also configure under Security → Rate Limiting for threshold control.
+  #
+  - name: LOGIN-RATE-LIMIT
+    expression: |
+      http.request.uri.path eq "/api/v1/auth/login" and
+      http.request.method eq "POST"
+    action: managed_challenge
+    enabled: true
+    note: >
+      Pair with a Rate Limiting rule:
+        Threshold = 10 req / 60 s / IP on matching expression above.
+      Rate Limiting rules: Security → Rate Limiting → New Rule.
+
+  # ── Rule 3: OWASP Core Ruleset (Managed — no expression needed) ────────────
+  # Enable the built-in Cloudflare Managed Ruleset to block:
+  #   SQLi, XSS, RCE, SSRF, path traversal, web shells
+  #
+  # Dashboard: Security → WAF → Managed Rules
+  #   Toggle ON: "Cloudflare Managed Ruleset"
+  #   Toggle ON: "Cloudflare OWASP Core Ruleset"
+  #   Sensitivity: Medium (raise to High after confirming no false positives)
+  #
+  - name: CF-MANAGED-OWASP
+    type: managed
+    enabled: true
+    note: >
+      Set paranoia level to PL2 (Medium) initially.
+      Monitor Security Events for false positives before raising to PL3.
+
+  # ── Rule 4: Geo-Restrict Admin (OPTIONAL — disabled by default) ────────────
+  # If all staff are in Sri Lanka, enable this to block foreign IPs from
+  # reaching admin paths regardless of IP whitelist.
+  # Disable when staff travel internationally.
+  #
+  # Action     : Block
+  # Priority   : 4
+  # Enabled    : FALSE by default
+  #
+  - name: GEO-BLOCK-ADMIN-NON-LK
+    expression: |
+      ip.geoip.country ne "LK" and
+      http.request.uri.path wildcard "/admin*"
+    action: block
+    enabled: false
+    note: >
+      Set enabled: true to activate. Check CF Security Events after enabling
+      to confirm no legitimate staff are blocked.
+
+# ── Tunnel config (companion to cloudflared service in docker-compose.yml) ───
+#
+#   The cloudflared container connects the Cloudflare edge to on-premise
+#   Docker services via an encrypted outbound-only tunnel.
+#   No inbound ports need to be opened on the router/firewall.
+#
+#   Setup steps (one-time):
+#     1. docker exec -it techmo-cloudflared cloudflared tunnel login
+#     2. docker exec -it techmo-cloudflared cloudflared tunnel create techmo-pos
+#     3. Copy the tunnel UUID into cloudflare/tunnel.yml
+#     4. Set DNS: admin.techmo.lk CNAME <uuid>.cfargotunnel.com
+#                 api.techmo.lk   CNAME <uuid>.cfargotunnel.com
+#
+#   The tunnel.yml file already exists at cloudflare/tunnel.yml.
+#   WAF rules apply at the CF edge BEFORE the request enters the tunnel.
+
+# ── Environment variables needed ─────────────────────────────────────────────
+# SHOP_STATIC_IP  — Set in .env.production (never commit the real IP)
+# VPN_CIDR        — Set in .env.production
+# CF_ACCOUNT_ID   — Cloudflare account ID (safe to commit)
+# CF_ZONE_ID      — Zone ID for techmo.lk (safe to commit)
+# CF_API_TOKEN    — CF API token with Zone:Edit permissions (SECRET — never commit)

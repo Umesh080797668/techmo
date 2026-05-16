@@ -1,0 +1,131 @@
+{
+  "name": "End of Day Pulse PDF",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 21 * * *" }]
+        }
+      },
+      "name": "Daily 21:00 Cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300],
+      "id": "n1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  COUNT(*)                          AS total_orders,\n  COALESCE(SUM(total_amount), 0)    AS total_revenue,\n  COUNT(DISTINCT customer_id)       AS unique_customers,\n  COALESCE(SUM(CASE WHEN status='voided' THEN 1 ELSE 0 END), 0) AS voided_orders\nFROM orders\nWHERE DATE(created_at) = CURRENT_DATE;",
+        "options": {}
+      },
+      "name": "Fetch Today Sales",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [440, 200],
+      "credentials": { "postgres": { "id": "postgres-main", "name": "TechMo PostgreSQL" } },
+      "id": "n2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  COUNT(*) FILTER (WHERE status = 'Completed')   AS completed,\n  COUNT(*) FILTER (WHERE status = 'Ready for Pickup') AS ready_pickup,\n  COUNT(*) FILTER (WHERE status = 'Under Repair') AS in_progress,\n  COUNT(*) FILTER (WHERE status = 'Awaiting Parts') AS awaiting_parts,\n  COUNT(*) FILTER (WHERE DATE(created_at) = CURRENT_DATE) AS new_today\nFROM repairs;",
+        "options": {}
+      },
+      "name": "Fetch Today Repairs",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [440, 380],
+      "credentials": { "postgres": { "id": "postgres-main", "name": "TechMo PostgreSQL" } },
+      "id": "n3"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT p.name, SUM(oi.qty) AS units_sold, SUM(oi.subtotal) AS revenue\nFROM order_items oi\nJOIN products p ON p.id = oi.product_id\nJOIN orders o ON o.id = oi.order_id\nWHERE DATE(o.created_at) = CURRENT_DATE AND o.status != 'voided'\nGROUP BY p.name\nORDER BY revenue DESC\nLIMIT 5;",
+        "options": {}
+      },
+      "name": "Top 5 Products Today",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [440, 560],
+      "credentials": { "postgres": { "id": "postgres-main", "name": "TechMo PostgreSQL" } },
+      "id": "n4"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*) AS critical_alerts\nFROM battery_alerts\nWHERE acknowledged_at IS NULL\n  AND alert_type IN ('SHELF_LIMIT_EXCEEDED', 'CRITICAL_AGE');",
+        "options": {}
+      },
+      "name": "Battery Alerts Count",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [440, 740],
+      "credentials": { "postgres": { "id": "postgres-main", "name": "TechMo PostgreSQL" } },
+      "id": "n5"
+    },
+    {
+      "parameters": {
+        "functionCode": "const sales       = items[0].json;\nconst repairs     = items[1].json;\n// Collect all top-product rows (may be up to 5 items from the query)\nconst topProducts = items.slice(2, items.length - 1).map(i => i.json);\nconst battery     = items[items.length - 1].json;\n\nconst today = new Date().toLocaleDateString('en-LK', { weekday:'long', year:'numeric', month:'long', day:'numeric' });\n\nconst topProductLines = topProducts.length > 0\n  ? topProducts.map((p,i) => `${i+1}. ${p.name} — ${p.units_sold} units — LKR ${Number(p.revenue).toLocaleString()}`).join('\\n')\n  : 'No sales recorded';\n\nreturn [{\n  json: {\n    // Fields for the daily_pulse.html PDF template\n    date: today,\n    branch: 'Main Branch',\n    generated_by: 'n8n automation',\n    total_sales: Number(sales.total_revenue) || 0,\n    total_transactions: Number(sales.total_orders) || 0,\n    total_repairs_completed: Number(repairs.completed) || 0,\n    battery_alerts: Number(battery.critical_alerts) || 0,\n    top_products: topProducts.map(p => ({ name: p.name, qty: Number(p.units_sold) || 0, revenue: Number(p.revenue) || 0 })),\n    // For Telegram message\n    reportText: [\n      `📊 *TechMo Daily Pulse — ${today}*`,\n      '',\n      '💰 *Sales*',\n      `  Orders: *${sales.total_orders}*  |  Revenue: *LKR ${Number(sales.total_revenue).toLocaleString()}*`,\n      `  Customers: ${sales.unique_customers}  |  Voided: ${sales.voided_orders}`,\n      '',\n      '🔧 *Repairs*',\n      `  New today: ${repairs.new_today}  |  Completed: ${repairs.completed}`,\n      `  Ready for pickup: ${repairs.ready_pickup}  |  In progress: ${repairs.in_progress}`,\n      `  Awaiting parts: ${repairs.awaiting_parts}`,\n      '',\n      '🏆 *Top 5 Products*',\n      topProductLines,\n      battery.critical_alerts > 0 ? `\\n🔋 *Battery Alerts:* ${battery.critical_alerts} critical` : '',\n      '',\n      '_Automated report by TechMo n8n_'\n    ].filter(Boolean).join('\\n')\n  }\n}];"
+      },
+      "name": "Build Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 460],
+      "id": "n6"
+    },
+    {
+      "parameters": {
+        "url": "http://worker-service:8000/api/v1/worker/pdf/daily-pulse",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Internal-Token", "value": "={{$env.N8N_INTERNAL_API_TOKEN}}" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify($json)}}",
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      },
+      "name": "Generate PDF via Worker",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 460],
+      "id": "n7"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.MANAGER_TELEGRAM_CHAT_ID}}",
+        "text": "={{$node[\"Build Report\"].json.reportText}}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "replyMarkup": {
+            "inlineKeyboard": {
+              "rows": [{ "row": { "buttons": [{ "text": "📄 Download PDF", "url": "={{$json.pdfUrl}}" }] } }]
+            }
+          }
+        }
+      },
+      "name": "Send to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [1180, 460],
+      "credentials": { "telegramApi": { "id": "telegram-bot", "name": "TechMo Telegram Bot" } },
+      "id": "n8"
+    }
+  ],
+  "connections": {
+    "Daily 21:00 Cron":       { "main": [[{ "node": "Fetch Today Sales", "type": "main", "index": 0 }, { "node": "Fetch Today Repairs", "type": "main", "index": 0 }, { "node": "Top 5 Products Today", "type": "main", "index": 0 }, { "node": "Battery Alerts Count", "type": "main", "index": 0 }]] },
+    "Fetch Today Sales":      { "main": [[{ "node": "Build Report", "type": "main", "index": 0 }]] },
+    "Fetch Today Repairs":    { "main": [[{ "node": "Build Report", "type": "main", "index": 1 }]] },
+    "Top 5 Products Today":   { "main": [[{ "node": "Build Report", "type": "main", "index": 2 }]] },
+    "Battery Alerts Count":   { "main": [[{ "node": "Build Report", "type": "main", "index": 3 }]] },
+    "Build Report":           { "main": [[{ "node": "Generate PDF via Worker", "type": "main", "index": 0 }]] },
+    "Generate PDF via Worker":{ "main": [[{ "node": "Send to Telegram",  "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "daily-report" }, { "name": "pdf" }, { "name": "telegram" }]
+}

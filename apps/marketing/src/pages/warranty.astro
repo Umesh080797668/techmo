@@ -1,0 +1,218 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+
+const lastUpdated = 'February 25, 2026';
+
+const productWarranty = [
+  { category: 'New Smartphones', period: '12 months', coverage: 'Manufacturing defects, hardware faults' },
+  { category: 'Refurbished Phones', period: '6 months', coverage: 'Hardware functionality as described' },
+  { category: 'Accessories (cables, cases)', period: '3 months', coverage: 'Manufacturing defects' },
+  { category: 'Batteries', period: '6 months', coverage: 'Defective cells, capacity loss >20% within warranty' },
+  { category: 'Chargers & Adapters', period: '3 months', coverage: 'Manufacturing defects, not physical damage' },
+  { category: 'Tablets', period: '12 months', coverage: 'Manufacturing defects, hardware faults' },
+];
+
+const repairWarranty = [
+  { type: 'Screen Replacement', period: '90 days', coverage: 'Display defects, touch faults from repair' },
+  { type: 'Battery Replacement', period: '90 days', coverage: 'Capacity and charge-cycle related faults' },
+  { type: 'Charging Port Repair', period: '60 days', coverage: 'Connection and charging faults' },
+  { type: 'Software / Reset', period: '30 days', coverage: 'Software-related recurring issues' },
+  { type: 'Board-Level Repair', period: '90 days', coverage: 'Specific component repaired' },
+  { type: 'Water Damage', period: '30 days', coverage: 'Limited — based on extent of damage' },
+];
+---
+<Layout
+  title="Warranty Policy — TechMo Electronics"
+  description="TechMo's full warranty policy for products and repairs. Understand what's covered, claim periods, and how to make a warranty claim."
+  canonical="/warranty"
+>
+  <Navbar />
+
+  <!-- Header -->
+  <section class="bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] text-white py-14 px-4">
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="text-5xl mb-3" aria-hidden="true">🛡️</div>
+      <h1 class="text-4xl font-bold mb-2">Warranty Policy</h1>
+      <p class="text-blue-200">Our commitment to quality — last updated {lastUpdated}</p>
+    </div>
+  </section>
+
+  <!-- Quick actions -->
+  <div class="bg-white border-b border-gray-100 py-4 px-4">
+    <div class="max-w-5xl mx-auto flex flex-wrap gap-3 justify-center">
+      <a href="/repair-status" class="quick-btn">🔍 Track Repair Status</a>
+      <a href="/contact" class="quick-btn">📞 Book Warranty Claim</a>
+      <a href="/faq#warranty" class="quick-btn">❓ Warranty FAQs</a>
+    </div>
+  </div>
+
+  <section class="py-14 px-4 bg-[#f8fafc]">
+    <div class="max-w-5xl mx-auto space-y-10">
+
+      <!-- Product Warranty Table -->
+      <div class="card p-6 md:p-8">
+        <h2 class="section-title">📦 Product Warranty Coverage</h2>
+        <p class="text-sm text-[#64748b] mb-6">All TechMo products are sold with the following warranty periods from the date of purchase, evidenced by your invoice.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr>
+                <th class="th">Product Category</th>
+                <th class="th">Warranty Period</th>
+                <th class="th">Coverage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {productWarranty.map((row, i) => (
+                <tr class={i % 2 === 0 ? 'bg-white' : 'bg-[#f8fafc]'}>
+                  <td class="td font-medium text-[#0f172a]">{row.category}</td>
+                  <td class="td"><span class="badge-period">{row.period}</span></td>
+                  <td class="td text-[#64748b]">{row.coverage}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Repair Warranty Table -->
+      <div class="card p-6 md:p-8">
+        <h2 class="section-title">🔧 Repair Service Warranty</h2>
+        <p class="text-sm text-[#64748b] mb-6">Repairs carried out at TechMo are backed by our labour and parts warranty from the date of completion.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr>
+                <th class="th">Repair Type</th>
+                <th class="th">Warranty Period</th>
+                <th class="th">Coverage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {repairWarranty.map((row, i) => (
+                <tr class={i % 2 === 0 ? 'bg-white' : 'bg-[#f8fafc]'}>
+                  <td class="td font-medium text-[#0f172a]">{row.type}</td>
+                  <td class="td"><span class="badge-period">{row.period}</span></td>
+                  <td class="td text-[#64748b]">{row.coverage}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- What's Covered / Not Covered -->
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="card p-6">
+          <h2 class="section-title text-green-700">✅ What's Covered</h2>
+          <ul class="space-y-2 text-sm text-[#334155]">
+            {[
+              'Manufacturing defects present at time of purchase',
+              'Hardware failures under normal use conditions',
+              'Premature component failure (battery, screen, ports)',
+              'Repair faults directly related to the specific job performed',
+              'Faulty parts used in our repair services',
+              'Recurring issues from the same software fault',
+            ].map(item => (
+              <li class="flex items-start gap-2">
+                <span class="text-green-500 mt-0.5 flex-shrink-0">✓</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div class="card p-6">
+          <h2 class="section-title text-red-700">❌ What's Not Covered</h2>
+          <ul class="space-y-2 text-sm text-[#334155]">
+            {[
+              'Physical damage (drops, cracks, dents)',
+              'Liquid or water damage',
+              'Damage from incorrect chargers or accessories',
+              'Repairs attempted by unauthorised parties after our service',
+              'Normal wear and tear (scratches, faded coatings)',
+              'Software issues caused by user modifications or apps',
+              'Theft or loss',
+              'Cosmetic damage not affecting function',
+            ].map(item => (
+              <li class="flex items-start gap-2">
+                <span class="text-red-400 mt-0.5 flex-shrink-0">✗</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <!-- How to Claim -->
+      <div class="card p-6 md:p-8">
+        <h2 class="section-title">📋 How to Make a Warranty Claim</h2>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          {[
+            { step: '1', icon: '🧾', title: 'Bring Your Receipt', desc: 'Original invoice or receipt is required as proof of purchase. Repairs need your ticket number.' },
+            { step: '2', icon: '📱', title: 'Bring the Device', desc: 'The product or repaired device must be presented in person at any TechMo branch.' },
+            { step: '3', icon: '🔍', title: 'Diagnosis', desc: 'Our technician will inspect the device to confirm the fault is covered under warranty.' },
+            { step: '4', icon: '🛠️', title: 'Resolution', desc: 'Approved claims are repaired or replaced at no charge, typically within 3–5 business days.' },
+          ].map(s => (
+            <div class="bg-[#f8fafc] rounded-xl p-4 text-center border border-gray-100">
+              <div class="w-8 h-8 rounded-full bg-[#1e40af] text-white text-sm font-bold flex items-center justify-center mx-auto mb-3">{s.step}</div>
+              <div class="text-2xl mb-2">{s.icon}</div>
+              <h3 class="font-semibold text-[#0f172a] text-sm mb-1">{s.title}</h3>
+              <p class="text-xs text-[#64748b] leading-relaxed">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- IMEI/Serial Note -->
+      <div class="bg-[#eff6ff] border border-blue-100 rounded-2xl p-6">
+        <div class="flex items-start gap-4">
+          <span class="text-3xl flex-shrink-0">🔢</span>
+          <div>
+            <h3 class="font-bold text-[#1e40af] mb-2">IMEI & Serial Number Registration</h3>
+            <p class="text-sm text-[#334155] leading-relaxed">
+              All smartphones and high-value accessories purchased at TechMo are registered with
+              their IMEI or serial number at point of sale. This enables instant warranty validation
+              — our staff can verify eligibility in seconds using your IMEI or invoice number.
+              Keep your invoice safe; it's your warranty certificate.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact CTA -->
+      <div class="text-center py-8">
+        <h3 class="text-xl font-bold text-[#0f172a] mb-3">Have a warranty question?</h3>
+        <p class="text-[#64748b] text-sm mb-6">Our team is ready to help. Visit any branch or contact us below.</p>
+        <div class="flex flex-wrap gap-3 justify-center">
+          <a href="/contact" class="btn-primary">Contact Us</a>
+          <a href="/faq" class="btn-secondary">Read FAQs</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+</Layout>
+
+<style>
+  .card { @apply bg-white rounded-2xl border border-gray-100 shadow-sm; }
+  .section-title { @apply text-lg font-bold text-[#0f172a] mb-4; }
+  .th { @apply bg-[#f8fafc] px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide; }
+  .td { @apply px-4 py-3 border-t border-gray-50; }
+  .badge-period { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700; }
+  .quick-btn {
+    @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium
+           bg-[#f8fafc] border border-gray-100 text-[#334155] hover:bg-[#eff6ff]
+           hover:border-[#1e40af]/20 hover:text-[#1e40af] transition-all duration-150;
+  }
+  .btn-primary {
+    @apply inline-flex items-center gap-2 bg-[#1e40af] text-white px-6 py-2.5 rounded-xl
+           font-semibold text-sm hover:bg-[#1e3a8a] transition-colors duration-150;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 border border-gray-200 bg-white text-[#334155]
+           px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-[#f8fafc] transition-colors;
+  }
+</style>
